@@ -1,0 +1,69 @@
+import axiosClient from "@/lib/axiosClient";
+import { AxiosError } from "axios";
+
+export type Comment = {
+    id: string;
+    issue_id: string;
+    user_id: string;
+    content: string;
+    created_at?: string;
+    updated_at?: string;
+};
+
+export type CreateCommentRequest = {
+    content: string;
+};
+
+export type UpdateCommentRequest = {
+    content: string;
+};
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+    const axiosError = error as AxiosError<{ message?: string; error?: string }>;
+    return axiosError.response?.data?.message || axiosError.response?.data?.error || axiosError.message || fallback;
+};
+
+export async function createComment(issueId: string | number, data: CreateCommentRequest) {
+    try {
+        const response = await axiosClient.post<Comment>(`/api/issues/${issueId}/comments`, data);
+        return response.data;
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "An error occurred while creating the comment."));
+    }
+}
+
+export async function getCommentById(commentId: string | number) {
+    try {
+        const response = await axiosClient.get<Comment>(`/api/comments/${commentId}`);
+        return response.data;
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "An error occurred while fetching the comment."));
+    }
+}
+
+export async function listIssueComments(issueId: string | number) {
+    try {
+        const response = await axiosClient.get<Comment[]>(`/api/issues/${issueId}/comments`);
+        return response.data;
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "An error occurred while listing comments."));
+    }
+}
+
+export async function updateComment(commentId: string | number, data: UpdateCommentRequest) {
+    try {
+        const response = await axiosClient.patch<Comment>(`/api/comments/${commentId}`, data);
+        return response.data;
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "An error occurred while updating the comment."));
+    }
+}
+
+export async function deleteComment(commentId: string | number) {
+    try {
+        const response = await axiosClient.delete(`/api/comments/${commentId}`);
+        return response.data;
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "An error occurred while deleting the comment."));
+    }
+}

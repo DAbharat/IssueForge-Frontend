@@ -31,7 +31,7 @@ export default function Login({
     onSubmit,
 }: LoginViewProps) {
     return (
-        <main className="flex min-h-screen items-center justify-center bg-[#24202f] px-4 py-6 text-white sm:px-6 lg:px-8">
+        <main className="flex min-h-screen items-center justify-center bg-[#050213] px-4 py-6 text-white sm:px-6 lg:px-8">
             <div className="grid w-full max-w-7xl items-start gap-2 lg:grid-cols-[1fr_1fr]">
                 <section
                     className="relative hidden h-175 overflow-hidden rounded-lg border border-white/10 bg-[url('/images/login-hero.jpg')] bg-cover bg-center shadow-2xl lg:block"
@@ -135,7 +135,7 @@ export default function Login({
                                 <Button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="h-11 w-full mt-2 rounded-sm bg-[#8d6fe8] text-sm font-medium text-white shadow-[0_16px_40px_rgba(141,111,232,0.28)] hover:bg-[#9a7ef0] disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer"
+                                    className="h-11 w-full mt-2 rounded-sm bg-[#ffffff] text-sm font-medium text-black hover:bg-gray-300 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer"
                                 >
                                     {isSubmitting ? "Signing in..." : "Sign in"}
                                 </Button>
