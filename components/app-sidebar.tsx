@@ -2,6 +2,7 @@ import { ChevronDown, ChevronLeft, FolderKanban, LayoutGrid, Settings, X } from 
 import { useState } from "react"
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { useRouter } from "next/navigation"
 
 type SidebarWorkspace = {
   id?: string | number
@@ -29,6 +30,8 @@ export function AppSidebar({
   const [projectsOpen, setProjectsOpen] = useState(false)
   const [workspacesOpen, setWorkspacesOpen] = useState(false)
   const [myWorkspacesOpen, setMyWorkspacesOpen] = useState(false)
+
+  const router = useRouter();
 
   const renderOverviewItem = () => (
     <button
@@ -133,6 +136,7 @@ export function AppSidebar({
                   ) : (
                     workspaces.map((workspace) => (
                       <button
+                        onClick={() => router.push("/workspace")}
                         key={workspace.id ?? workspace.name ?? "workspace"}
                         type="button"
                         className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-[#94A3B8] transition-colors hover:bg-[#171A21] hover:text-[#E2E8F0]"

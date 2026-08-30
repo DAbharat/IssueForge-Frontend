@@ -7,6 +7,7 @@ export type Project = {
     description?: string;
     workspace_id?: string;
     lead_id?: string;
+    lead_name?: string;
     created_at?: string;
     updated_at?: string;
 };
@@ -79,6 +80,7 @@ export async function deleteProject(projectId: string | number) {
 export async function listProjectsByLead(workspaceId: string | number) {
     try {
         const response = await axiosClient.get<Project[]>(`/api/workspaces/${workspaceId}/projects`);
+        //console.log("response: ", response.data)
         return response.data;
     } catch (error) {
         throw new Error(getErrorMessage(error, "An error occurred while listing projects."));

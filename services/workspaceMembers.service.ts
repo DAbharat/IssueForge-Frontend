@@ -2,11 +2,15 @@ import axiosClient from "@/lib/axiosClient";
 import { AxiosError } from "axios";
 
 export type WorkspaceMember = {
-    id: string;
-    user_id: string;
-    workspace_id: string;
+    id?: string | number;
+    user_id?: string | number;
+    workspace_id?: string | number;
+    email?: string;
+    fullname?: string;
+    username?: string;
     role?: string;
     created_at?: string;
+    joined_at?: string;
 };
 
 const getErrorMessage = (error: unknown, fallback: string) => {

@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 import ProfileHeader from "@/components/profile/ProfileHeader"
@@ -8,6 +9,7 @@ import WorkspaceCard from "@/components/workspaces/WorkspaceCard"
 import { useProfile } from "@/hooks/use-profile"
 
 export default function ProfilePage() {
+  const router = useRouter()
   const { profile, isLoading, error } = useProfile()
   const [activeTab, setActiveTab] = useState<ProfileTabKey>("Workspaces")
 
@@ -73,6 +75,10 @@ export default function ProfilePage() {
               name={workspace.name || "Workspace"}
               createdAt={workspace.created_at}
               ownerName={ownerName || displayName}
+              onClick={() => {
+                if (!workspaceId) return
+                router.push(`/workspace?workspaceId=${encodeURIComponent(String(workspaceId))}`)
+              }}
             />
           )
         })}

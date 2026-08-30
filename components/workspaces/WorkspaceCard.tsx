@@ -5,6 +5,7 @@ type WorkspaceCardProps = {
     name: string
     createdAt?: string
     ownerName?: string
+    onClick?: () => void
 }
 
 function getInitials(name: string) {
@@ -36,13 +37,24 @@ function formatJoinedDate(value?: string) {
     })}`
 }
 
-export default function WorkspaceCard({ id, name, createdAt, ownerName }: WorkspaceCardProps) {
+export default function WorkspaceCard({ id, name, createdAt, ownerName, onClick }: WorkspaceCardProps) {
     const initials = getInitials(name)
     const workspaceName = name?.trim() || "Workspace"
     const owner = ownerName?.trim() || "Workspace creator"
 
     return (
-        <article className="mx-auto w-full max-w-2xl rounded-md border border-[#222631] bg-[#1A1D24] px-3.5 py-3 text-[#E2E8F0] shadow-[0_1px_0_rgba(255,255,255,0.02)] transition-colors hover:bg-[#1B1E27] sm:px-4 sm:py-3.5">
+        <article
+            className="mx-auto w-full max-w-2xl cursor-pointer rounded-md border border-[#222631] bg-[#1A1D24] px-3.5 py-3 text-[#E2E8F0] shadow-[0_1px_0_rgba(255,255,255,0.02)] transition-colors hover:bg-[#1B1E27] focus:outline-none focus:ring-2 focus:ring-[#5E6AD2]/60 sm:px-4 sm:py-3.5"
+            onClick={onClick}
+            onKeyDown={(event) => {
+                if ((event.key === "Enter" || event.key === " ") && onClick) {
+                    event.preventDefault()
+                    onClick()
+                }
+            }}
+            role="button"
+            tabIndex={0}
+        >
             <div className="flex items-center gap-3 sm:gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#222631] bg-[#DDE1E5] text-sm font-semibold text-[#0F1115] sm:h-12 sm:w-12 sm:text-base">
                     {initials}
