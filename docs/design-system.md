@@ -63,151 +63,371 @@ The application should feel **intentional and understated**.
 
 # 2. Core Color Palette
 
-IssueForge uses a very dark base with subtle purple undertones.
+IssueForge uses a dark, restrained color system designed for a professional issue and project management application.
 
-## Primary Background
+The following five colors form the **primary IssueForge design palette** and should be treated as the source of truth when implementing new UI.
 
-```text
-#04020E
-```
+| Role               | Color     | Usage                                                        |
+| ------------------ | --------- | ------------------------------------------------------------ |
+| Primary Accent     | `#5E6AD2` | Primary interactive accents, active states, focus indicators |
+| App Background     | `#0F1115` | Main application canvas                                      |
+| Surface Background | `#1A1D24` | Cards, sidebars, panels, kanban columns                      |
+| Primary Text       | `#E2E8F0` | Headings, important content, primary labels                  |
+| Secondary Text     | `#94A3B8` | Metadata, descriptions, timestamps, breadcrumbs              |
 
-This is the primary application background.
-
-It should be treated as the foundation of the IssueForge interface.
-
-Use it for:
-
-* Authentication backgrounds
-* Main application backgrounds
-* Large page surfaces
-* Empty surrounding space
-
-Do not replace the background with generic Tailwind gray/black values unless there is a specific design reason.
+These colors should be reused consistently rather than replaced with arbitrary Tailwind colors.
 
 ---
 
-# 3. White / Neutral System
-
-The primary neutral system is white with varying opacity.
-
-Instead of creating many unrelated gray colors, use opacity levels to establish hierarchy.
-
-Common levels:
+## 2.1 Primary Accent
 
 ```text
-white
-white/90
-white/80
-white/70
-white/65
-white/55
-white/45
-white/40
-white/35
-white/30
-white/28
-white/20
-white/18
-white/16
-white/12
-white/10
-white/6
+#5E6AD2
 ```
 
-### Primary text
+Soft Indigo is the primary IssueForge accent color.
 
-Use:
+Use it for:
+
+* Primary interactive accents
+* Active navigation states
+* Selected states
+* Focus indicators
+* Important links
+* Interactive controls
+* Brand accents
+* Feature-specific highlights
+
+The accent should be used intentionally.
+
+Do not apply `#5E6AD2` to every button, card, border, or decorative element.
+
+The accent should establish interaction and hierarchy without making the entire interface purple.
+
+---
+
+## 2.2 App Background
+
+```text
+#0F1115
+```
+
+This is the primary application canvas.
+
+Use it for:
+
+* Main application backgrounds
+* Page backgrounds
+* Empty surrounding space
+* Application shell
+* Authentication backgrounds when appropriate
+
+The background should remain visually quiet so that surfaces, text, and interactive elements establish hierarchy.
+
+Do not replace it with arbitrary Tailwind values such as:
+
+```text
+bg-black
+bg-gray-950
+bg-slate-950
+```
+
+unless there is a specific design reason.
+
+---
+
+## 2.3 Surface Background
+
+```text
+#1A1D24
+```
+
+This is the elevated surface color used to distinguish UI elements from the main application canvas.
+
+Use it for:
+
+* Cards
+* Sidebars
+* Panels
+* Kanban columns
+* Dropdown surfaces
+* Settings sections
+* Important grouped content
+* Elevated application areas
+
+Surfaces should provide subtle separation from the application background.
+
+Avoid creating many different surface colors.
+
+The primary hierarchy should generally be:
+
+```text
+#0F1115
+     ↓
+#1A1D24
+     ↓
+subtle border
+     ↓
+typography
+```
+
+rather than relying on heavy shadows or multiple competing background colors.
+
+---
+
+## 2.4 Primary Text
+
+```text
+#E2E8F0
+```
+
+This is the primary text color.
+
+Use it for:
+
+* Page titles
+* Section headings
+* Issue titles
+* Important labels
+* Primary navigation items
+* Important content
+* Primary button text when appropriate
+
+Primary text should provide strong contrast against the dark background without using pure white everywhere.
+
+Prefer:
+
+```text
+text-[#E2E8F0]
+```
+
+for normal application text rather than introducing unrelated gray values.
+
+---
+
+## 2.5 Secondary Text
+
+```text
+#94A3B8
+```
+
+This is the secondary/muted text color.
+
+Use it for:
+
+* Metadata
+* Timestamps
+* Breadcrumbs
+* Descriptions
+* Supporting information
+* Secondary navigation
+* Helper text
+* Less important labels
+
+Secondary text should remain clearly readable but visually weaker than primary content.
+
+Prefer:
+
+```text
+text-[#94A3B8]
+```
+
+for normal secondary application text.
+
+---
+
+## 2.6 Color Hierarchy
+
+The general color hierarchy should follow:
+
+```text
+                    #E2E8F0
+                  Primary Text
+                       ↑
+                       |
+#5E6AD2 ←──── Interaction / Accent
+                       |
+                       ↓
+                  #94A3B8
+                 Secondary Text
+
+#1A1D24 ←──── Elevated Surfaces
+
+#0F1115 ←──── Application Canvas
+```
+
+The interface should primarily consist of:
+
+```text
+App Background
+      +
+Surface Background
+      +
+Primary Text
+      +
+Secondary Text
+      +
+Accent
+```
+---
+
+## 2.7 Navbar and Sidebar Colors
+
+The top navbar and left sidebar use dedicated shades that sit between the app background and elevated surfaces, giving the application shell a distinct sense of structure.
+
+| Element                     | Color     | Usage / Visual Detail                                                          |
+| ---------------------------- | --------- | -------------------------------------------------------------------------------- |
+| Top Navbar                  | `#0D0E12` | Darker than the canvas; anchors search, notifications, and profile.             |
+| Left Sidebar                | `#12141A` | Slightly deeper shade between canvas and top bar for a distinct side panel.      |
+| Active Nav Item (BG)         | `#1E222D` | Active item background fill (e.g., current project or tab).                     |
+| Active Nav Item (Accent)     | `#5E6AD2` | Soft Indigo for icon/text or a 2px left border strip.                           |
+| Hover Nav Item (BG)          | `#171A21` | Subtle hover effect for inactive nav items.                                     |
+| Dividers & Borders           | `#222631` | 1px solid border separating sidebar/navbar from the canvas.                     |
+
+Usage notes:
+
+* The top navbar and sidebar should **not** reuse `#0F1115` (App Background) or `#1A1D24` (Surface Background) directly — they use their own darker/deeper shades so the application shell reads as structurally distinct from both the canvas and elevated content surfaces.
+* Active nav items should combine `#1E222D` as the background fill with `#5E6AD2` as either the icon/text color or a 2px left-border accent strip — not both applied at full strength, to avoid overemphasis.
+* Hover states (`#171A21`) should only apply to inactive items; the active item's state should not change on hover.
+* Use `#222631` for the 1px border separating the navbar/sidebar from the main canvas, consistent with the broader restrained border system in Section 12.
+
+Do not introduce additional colors unless they have a clear semantic purpose.
+
+---
+
+# 3. Neutral and Opacity System
+
+The primary application palette should use the five colors above as the source of truth.
+
+White opacity values may still be used for **transient visual treatments** where appropriate, such as:
+
+```text
+white/5
+white/6
+white/10
+white/12
+white/16
+white/20
+```
+
+Typical uses include:
+
+* Subtle borders
+* Hover backgrounds
+* Dividers
+* Overlays
+* Authentication imagery
+* Very subtle visual separation
+
+However, opacity-based white should not replace the defined primary text and surface colors throughout the application.
+
+For example, prefer:
+
+```text
+text-[#E2E8F0]
+```
+
+for primary application text instead of:
 
 ```text
 text-white
 ```
 
-for:
-
-* Page titles
-* Important content
-* Primary button text
-* Important navigation items
-
-### Secondary text
-
-Use approximately:
+and:
 
 ```text
-text-white/55
-text-white/65
+text-[#94A3B8]
 ```
 
-for:
-
-* Descriptions
-* Supporting information
-* Secondary navigation
-* Helper text
-
-### Muted text
-
-Use approximately:
-
-```text
-text-white/35
-text-white/40
-text-white/45
-```
-
-for:
-
-* Metadata
-* Timestamps
-* Hints
-* Less important information
-* Secondary labels
-
-### Placeholder text
-
-Use approximately:
-
-```text
-text-white/25
-text-white/28
-text-white/30
-```
-
-Placeholder text must remain visually weaker than actual input text.
+for secondary application text instead of creating arbitrary gray values.
 
 ---
 
-# 4. Accent Color
+# 4. Accent and Semantic Colors
 
-Purple remains part of the IssueForge identity, but it is **not the default color for every primary action**.
+`#5E6AD2` is the primary IssueForge accent.
 
-The existing brand purple is:
+Use it for interaction and emphasis rather than decoration.
+
+Examples:
 
 ```text
-#8D6FE8
+Active navigation
+    → #5E6AD2
+
+Focused input
+    → #5E6AD2
+
+Selected item
+    → #5E6AD2
+
+Important link
+    → #5E6AD2
 ```
 
-and its lighter hover variation:
+The accent should not automatically be used for every primary CTA.
+
+For example, the authentication screen currently uses a high-contrast white primary CTA. This pattern may continue where strong contrast is more appropriate than an accent-colored button.
+
+---
+
+## 4.1 Semantic Colors
+
+Additional colors may be introduced when they communicate a specific semantic meaning.
+
+Examples:
 
 ```text
+Success → green
+Warning → amber/yellow
+Error   → red
+Info    → blue
+```
+
+Semantic colors should be:
+
+* Used only when their meaning is relevant
+* Muted rather than excessively saturated
+* Consistent across the application
+* Accessible against the dark surfaces
+
+Do not introduce arbitrary colors simply for visual variety.
+
+Destructive actions should continue to use the established subtle red treatment:
+
+```text
+border-red-500/30
+bg-red-500/10
+text-red-200
+```
+
+---
+
+## 4.2 Legacy Authentication Colors
+
+The existing authentication screen may contain older colors such as:
+
+```text
+#04020E
+#8D6FE8
 #9A7EF0
 ```
 
-Purple may be used for:
+These are considered **legacy visual references**, not the primary application palette.
 
-* Selected states
-* Focus indicators
-* Important accents
-* Active navigation
-* Links when appropriate
-* Status or feature-specific highlights
-* Brand elements
+When modifying existing authentication screens, preserve their established visual identity unless the task explicitly requires migration to the new palette.
 
-However, the current authentication design establishes **white as the primary CTA color**.
+For all **new application features**, use the current IssueForge palette:
 
-Do not automatically make every primary button purple.
+```text
+#5E6AD2
+#0F1115
+#1A1D24
+#E2E8F0
+#94A3B8
+```
 
-The use of purple should be intentional and restrained.
+Do not mix the legacy purple and background values into new application screens without a specific design reason.
 
 ---
 
@@ -1063,11 +1283,11 @@ The goal is for every screen to feel like it belongs to **the same application**
 When implementing a new screen or component:
 
 1. Inspect existing screens before designing.
-2. Treat the existing authentication screen as a visual reference.
-3. Use `#04020E` as the primary dark foundation.
+2. Treat the existing authentication screen as a visual reference, but note it uses the legacy palette (`#04020E`, `#8D6FE8`, `#9A7EF0`) — do not carry those specific values into new application screens.
+3. Use `#0F1115` as the primary application background for new application screens.
 4. Use white as the default primary CTA unless the feature has a specific reason to use another treatment.
-5. Use purple accents sparingly.
-6. Use white opacity levels for neutral hierarchy.
+5. Use the `#5E6AD2` accent sparingly, for interaction and emphasis rather than decoration.
+6. Use `#E2E8F0` (primary text) and `#94A3B8` (secondary text) for text hierarchy; reserve white opacity values (`white/5`–`white/20`) for subtle borders, hover states, and other transient treatments.
 7. Use subtle borders instead of heavy containers.
 8. Avoid excessive shadows and gradients.
 9. Use small/moderate corner radii.

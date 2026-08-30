@@ -8,6 +8,8 @@ import { me } from "@/services/account.service"
 type ProfileWorkspace = {
   id: string | number
   name: string
+  role?: string
+  created_at?: string
 }
 
 type ProfileUser = {
