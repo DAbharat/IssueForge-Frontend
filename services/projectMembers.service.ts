@@ -2,11 +2,15 @@ import axiosClient from "@/lib/axiosClient";
 import { AxiosError } from "axios";
 
 export type ProjectMember = {
-    id: string;
-    user_id: string;
-    project_id: string;
+    id?: string | number;
+    user_id?: string | number;
+    project_id?: string | number;
+    fullname?: string;
+    username?: string;
+    email?: string;
     role?: string;
     created_at?: string;
+    joined_at?: string;
 };
 
 const getErrorMessage = (error: unknown, fallback: string) => {

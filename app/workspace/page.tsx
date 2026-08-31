@@ -1,7 +1,7 @@
 "use client"
 
 import { Search, SlidersHorizontal, Plus } from "lucide-react"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 
 import ProjectCard from "@/components/projects/ProjectCard"
@@ -24,6 +24,7 @@ export default function WorkspacePage() {
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [members, setMembers] = useState<WorkspaceMemberOverviewItem[]>([])
   const [isLoadingMembers, setIsLoadingMembers] = useState(false)
+  const router = useRouter();
 
   useEffect(() => {
     if (!profile?.workspaces || profile.workspaces.length === 0) return
@@ -175,14 +176,21 @@ export default function WorkspacePage() {
           ) : (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {projects.map((project) => (
-                <ProjectCard
+                <div
                   key={project.id}
-                  id={project.id}
-                  title={project.name || "Untitled project"}
-                  description={project.description}
-                  lead_name={project.lead_name || (project.lead_id ? `User #${project.lead_id}` : "Unknown lead")}
-                  issueCount={0}
-                />
+                  onClick={() => router.push(`/projects/${project.id}`)}
+                  role="button"
+                  tabIndex={0}
+                  className="cursor-pointer"
+                >
+                  <ProjectCard
+                    id={project.id}
+                    title={project.name || "Untitled project"}
+                    description={project.description}
+                    lead_name={project.lead_name || (project.lead_id ? `User #${project.lead_id}` : "Unknown lead")}
+                    issueCount={0}
+                  />
+                </div>
               ))}
             </div>
           )}

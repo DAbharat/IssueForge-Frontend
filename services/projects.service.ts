@@ -44,6 +44,7 @@ export async function createProject(workspaceId: string | number, data: CreatePr
 export async function getProjectById(projectId: string | number) {
     try {
         const response = await axiosClient.get<Project>(`/api/projects/${projectId}`);
+        //console.log("response: ", response.data)
         return response.data;
     } catch (error) {
         throw new Error(getErrorMessage(error, "An error occurred while fetching the project."));
