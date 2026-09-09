@@ -66,7 +66,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-[#0F1115] text-[#E2E8F0]">
+    <div className="flex min-h-screen w-full bg-[#000000] text-[#E2E8F0]">
       {!isMobile && (
         <AppSidebar
           collapsed={sidebarCollapsed}
@@ -96,14 +96,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </>
       )}
 
-      <div className="flex min-h-screen flex-1 flex-col bg-[#0F1115]">
+      <div className="flex min-h-screen flex-1 flex-col bg-[#000000]">
         <Navbar
           workspaceName={workspaceName}
           userName={userName}
           isMobile={isMobile}
           onMobileSidebarToggle={() => setMobileSidebarOpen((prev) => !prev)}
         />
-        <main className="flex-1 bg-[#0F1115] p-6 text-[#E2E8F0]">{children}</main>
+        <main className="flex-1 bg-[#000000] p-6 text-[#E2E8F0]">{children}</main>
       </div>
     </div>
   )

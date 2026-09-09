@@ -36,7 +36,7 @@ export default function ProfileHeader({
   return (
     <header className="w-full">
       <div className="mx-auto flex w-full max-w-96 flex-col items-center text-center sm:max-w-100 lg:max-w-110">
-        <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full border border-[#222631] bg-[#DDE1E5] text-[1.8rem] font-semibold text-[#0F1115] shadow-[0_0_0_1px_rgba(255,255,255,0.08)] sm:h-24 sm:w-24 sm:text-[2rem] lg:h-28 lg:w-28 lg:text-[2.2rem]">
+        <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full border border-[#27272A] bg-[#DDE1E5] text-[1.8rem] font-semibold text-[#000000] shadow-[0_0_0_1px_rgba(255,255,255,0.08)] sm:h-24 sm:w-24 sm:text-[2rem] lg:h-28 lg:w-28 lg:text-[2.2rem]">
           {initials}
         </div>
 

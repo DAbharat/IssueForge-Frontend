@@ -16,7 +16,7 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <div className="mx-auto max-w-5xl">
-        <div className="rounded-lg border border-[#222631] bg-[#1A1D24] p-6 text-sm text-[#94A3B8]">
+        <div className="rounded-lg border border-[#27272A] bg-[#18181B] p-6 text-sm text-[#94A3B8]">
           Loading profile...
         </div>
       </div>
@@ -39,7 +39,7 @@ export default function ProfilePage() {
   const renderTabContent = () => {
     if (activeTab === "Projects") {
       return (
-        <div className="rounded-sm border border-dashed border-[#222631] bg-[#0F1115] p-6 text-sm text-[#94A3B8]">
+        <div className="rounded-sm border border-dashed border-[#27272A] bg-[#000000] p-6 text-sm text-[#94A3B8]">
           No projects yet.
         </div>
       )
@@ -47,7 +47,7 @@ export default function ProfilePage() {
 
     if (activeTab === "Issues") {
       return (
-        <div className="rounded-sm border border-dashed border-[#222631] bg-[#0F1115] p-6 text-sm text-[#94A3B8]">
+        <div className="rounded-sm border border-dashed border-[#27272A] bg-[#000000] p-6 text-sm text-[#94A3B8]">
           No issues yet.
         </div>
       )
@@ -55,7 +55,7 @@ export default function ProfilePage() {
 
     if (workspaceItems.length === 0) {
       return (
-        <div className="rounded-sm border border-dashed border-[#222631] bg-[#0F1115] p-6 text-sm text-[#94A3B8]">
+        <div className="rounded-sm border border-dashed border-[#27272A] bg-[#000000] p-6 text-sm text-[#94A3B8]">
           No workspaces yet.
         </div>
       )

@@ -43,7 +43,7 @@ export default function WorkspaceMembersOverview({
         <button
           type="button"
           onClick={onManageMembers}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[#2A2F3A] bg-transparent px-2.5 py-1 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3A4050] hover:bg-white/3"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[#27272A] bg-transparent px-2.5 py-1 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46] hover:bg-white/3"
         >
           <span>Manage Workspace Members</span>
           <Plus className="h-3.5 w-3.5" />
@@ -58,14 +58,14 @@ export default function WorkspaceMembersOverview({
             type="text"
             placeholder={searchPlaceholder}
             onChange={(event) => onSearchChange?.(event.target.value)}
-            className="h-9 w-full rounded-md border border-[#2A2F3A] bg-[#101419] pl-8 pr-3 text-xs text-[#E2E8F0] placeholder:text-[#94A3B8]/70 focus:border-[#5E6AD2]/60 focus:outline-none"
+            className="h-9 w-full rounded-md border border-[#27272A] bg-[#18181B] pl-8 pr-3 text-xs text-[#E2E8F0] placeholder:text-[#94A3B8]/70 focus:border-[#5E6AD2]/60 focus:outline-none"
           />
         </div>
 
         <button
           type="button"
           onClick={onStatusChange}
-          className="inline-flex h-9 shrink-0 items-center justify-between gap-1.5 rounded-md border border-[#2A2F3A] bg-[#101419] px-3 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3A4050]"
+          className="inline-flex h-9 shrink-0 items-center justify-between gap-1.5 rounded-md border border-[#27272A] bg-[#18181B] px-3 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46]"
         >
           <span>Active ({activeCount}) / Pending ({pendingCount})</span>
           <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[#94A3B8]" />
@@ -73,7 +73,7 @@ export default function WorkspaceMembersOverview({
 
         <button
           type="button"
-          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-[#2A2F3A] bg-transparent px-3 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3A4050] hover:bg-white/3"
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-[#27272A] bg-transparent px-3 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46] hover:bg-white/3"
         >
           <span>View All ({members.length})</span>
           <ChevronDown className="h-3.5 w-3.5 text-[#94A3B8]" />
@@ -88,7 +88,7 @@ export default function WorkspaceMembersOverview({
             className="flex flex-col items-center gap-1.5"
           >
             <div
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#0F1115] bg-[#DDE1E5] text-xs font-semibold text-[#0F1115] shadow-[0_0_0_2px_rgba(15,17,21,0.8)]"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#000000] bg-[#DDE1E5] text-xs font-semibold text-[#000000] shadow-[0_0_0_2px_rgba(0,0,0,0.8)]"
               title={member.fullname}
             >
               {member.initials}
@@ -104,7 +104,7 @@ export default function WorkspaceMembersOverview({
           onClick={onManageMembers}
           className="flex flex-col items-center gap-1.5"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#2A2F3A] bg-[#11151A] text-[#E2E8F0] transition-colors hover:border-[#3A4050] hover:bg-[#171C22]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#27272A] bg-[#18181B] text-[#E2E8F0] transition-colors hover:border-[#3F3F46] hover:bg-[#27272A]">
             <Plus className="h-4 w-4" />
           </div>
           <span className="max-w-15 truncate text-center text-[10px] text-[#94A3B8]">

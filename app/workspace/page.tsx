@@ -79,22 +79,22 @@ export default function WorkspacePage() {
         if (!cancelled) {
           const nextMembers: WorkspaceMemberOverviewItem[] = Array.isArray(response)
             ? response.map((member: WorkspaceMember) => {
-                const fullname = member.fullname || member.username || "Member"
-                const initials = fullname
-                  .split(/\s+/)
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .map((part) => part.charAt(0).toUpperCase())
-                  .join("") || "M"
+              const fullname = member.fullname || member.username || "Member"
+              const initials = fullname
+                .split(/\s+/)
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((part) => part.charAt(0).toUpperCase())
+                .join("") || "M"
 
-                return {
-                  id: member.id,
-                  fullname,
-                  username: member.username,
-                  initials,
-                  status: "active",
-                }
-              })
+              return {
+                id: member.id,
+                fullname,
+                username: member.username,
+                initials,
+                status: "active",
+              }
+            })
             : []
 
           setMembers(nextMembers)
@@ -128,14 +128,14 @@ export default function WorkspacePage() {
       </div>
 
       <section className="space-y-8">
-          <WorkspaceMembersOverview
-            members={members}
-            activeCount={members.filter((member) => member.status === "active").length}
-            pendingCount={members.filter((member) => member.status === "pending").length}
-            onSearchChange={() => undefined}
-            onStatusChange={() => undefined}
-            onManageMembers={() => undefined}
-          />
+        <WorkspaceMembersOverview
+          members={members}
+          activeCount={members.filter((member) => member.status === "active").length}
+          pendingCount={members.filter((member) => member.status === "pending").length}
+          onSearchChange={() => undefined}
+          onStatusChange={() => undefined}
+          onManageMembers={() => undefined}
+        />
 
         <div>
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -147,21 +147,21 @@ export default function WorkspacePage() {
                 <input
                   type="text"
                   placeholder="Search projects..."
-                  className="h-9 w-full rounded-sm border border-white/10 bg-[#1A1D24] pl-8 pr-3 text-sm text-[#E2E8F0] placeholder:text-[#94A3B8]/60 transition-colors focus:border-white/20 focus:outline-none sm:w-56"
+                  className="h-9 w-full rounded-sm border border-[#27272A] bg-[#18181B] pl-8 pr-3 text-sm text-[#E2E8F0] placeholder:text-[#94A3B8]/60 transition-colors focus:border-[#3F3F46] focus:outline-none sm:w-56"
                 />
               </div>
 
               <button
                 type="button"
                 aria-label="Filter projects"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-white/10 bg-[#1A1D24] text-[#94A3B8] transition-colors hover:border-white/20 hover:text-[#E2E8F0]"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-[#27272A] bg-[#18181B] text-[#94A3B8] transition-colors hover:border-[#3F3F46] hover:text-[#E2E8F0]"
               >
                 <SlidersHorizontal className="h-4 w-4" />
               </button>
 
               <button
                 type="button"
-                className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-sm border border-white/10 bg-[#1A1D24] px-3 text-sm font-medium text-[#E2E8F0] transition-colors hover:border-white/20 hover:bg-white/5"
+                className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-sm border border-[#27272A] bg-[#27272A] px-3 text-sm font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46] hover:bg-[#3F3F46]"
               >
                 <Plus className="h-4 w-4" />
                 New

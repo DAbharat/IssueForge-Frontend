@@ -151,7 +151,7 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-[#2A2F3A] border-t-[#5E6AD2]"></div>
+          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-[#27272A] border-t-[#5E6AD2]"></div>
           <p className="text-[#94A3B8]">Loading project...</p>
         </div>
       </div>
@@ -172,7 +172,7 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0F1115] p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-[#000000] p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Project Header */}
         <div className="space-y-2">
@@ -183,7 +183,7 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-[#222631]">
+        <div className="border-b border-[#27272A]">
           <ProjectTabs activeTab={activeTab} onTabChange={setActiveTab} />
         </div>
 
@@ -191,7 +191,7 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
         <div>
           {activeTab === "Overview" && (
             <div className="space-y-4">
-              <div className="rounded-xl border border-[#2A2F3A] bg-[#1A1D24] p-5">
+              <div className="rounded-xl border border-[#27272A] bg-[#18181B] p-5">
                 <h2 className="mb-3 text-lg font-semibold text-[#E2E8F0]">
                   Project Overview
                 </h2>
@@ -225,24 +225,24 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#2A2F3A] bg-[#1A1D24] p-5">
+              <div className="rounded-xl border border-[#27272A] bg-[#18181B] p-5">
                 <h2 className="mb-4 text-lg font-semibold text-[#E2E8F0]">
                   Statistics
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="rounded-lg border border-[#2A2F3A] bg-[#11151A] p-4">
+                  <div className="rounded-lg border border-[#27272A] bg-[#18181B] p-4">
                     <p className="text-xs text-[#94A3B8]">Total Issues</p>
                     <p className="text-2xl font-bold text-[#E2E8F0]">
                       {issues.length}
                     </p>
                   </div>
-                  <div className="rounded-lg border border-[#2A2F3A] bg-[#11151A] p-4">
+                  <div className="rounded-lg border border-[#27272A] bg-[#18181B] p-4">
                     <p className="text-xs text-[#94A3B8]">Team Members</p>
                     <p className="text-2xl font-bold text-[#E2E8F0]">
                       {members.length}
                     </p>
                   </div>
-                  <div className="rounded-lg border border-[#2A2F3A] bg-[#11151A] p-4">
+                  <div className="rounded-lg border border-[#27272A] bg-[#18181B] p-4">
                     <p className="text-xs text-[#94A3B8]">Completed Issues</p>
                     <p className="text-2xl font-bold text-[#E2E8F0]">
                       {issues.filter((i) => i.status === "done").length}

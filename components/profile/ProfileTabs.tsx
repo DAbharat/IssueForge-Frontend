@@ -11,7 +11,7 @@ type ProfileTabsProps = {
 
 export default function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
   return (
-    <div className="grid grid-cols-3 items-end border-b border-[#222631] pb-2" role="tablist" aria-label="Profile sections">
+    <div className="grid grid-cols-3 items-end border-b border-[#27272A] pb-2" role="tablist" aria-label="Profile sections">
       {PROFILE_TABS.map((tab) => {
         const isActive = activeTab === tab
 

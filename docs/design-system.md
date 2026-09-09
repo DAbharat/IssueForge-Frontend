@@ -30,9 +30,9 @@ The application should use a restrained visual language where typography, spacin
 
 ### Prefer
 
-* Near-black backgrounds
-* Subtle purple undertones
-* White primary actions
+* Pitch-black backgrounds
+* Neutral gray surfaces and controls
+* Gray primary actions
 * White text with opacity-based hierarchy
 * Very subtle borders
 * Minimal shadows
@@ -69,9 +69,9 @@ The following five colors form the **primary IssueForge design palette** and sho
 
 | Role               | Color     | Usage                                                        |
 | ------------------ | --------- | ------------------------------------------------------------ |
-| Primary Accent     | `#5E6AD2` | Primary interactive accents, active states, focus indicators |
-| App Background     | `#0F1115` | Main application canvas                                      |
-| Surface Background | `#1A1D24` | Cards, sidebars, panels, kanban columns                      |
+| Primary Accent     | `#5E6AD2` | Focus indicators and rare, intentional interactive highlights |
+| App Background     | `#000000` | Main application canvas                                      |
+| Surface Background | `#18181B` | Cards, sidebars, panels, kanban columns                      |
 | Primary Text       | `#E2E8F0` | Headings, important content, primary labels                  |
 | Secondary Text     | `#94A3B8` | Metadata, descriptions, timestamps, breadcrumbs              |
 
@@ -87,32 +87,28 @@ These colors should be reused consistently rather than replaced with arbitrary T
 
 Soft Indigo is the primary IssueForge accent color.
 
-Use it for:
+Use it sparingly for:
 
-* Primary interactive accents
-* Active navigation states
-* Selected states
 * Focus indicators
+* Selected states
 * Important links
-* Interactive controls
-* Brand accents
 * Feature-specific highlights
 
-The accent should be used intentionally.
+The accent should be used intentionally and rarely — it is not the color of everyday buttons or controls.
 
-Do not apply `#5E6AD2` to every button, card, border, or decorative element.
+Do not apply `#5E6AD2` to every button, card, border, or decorative element. Everyday interactive controls (primary buttons, active navigation, active toggles) should use the neutral gray system described below, not the accent.
 
-The accent should establish interaction and hierarchy without making the entire interface purple.
+The accent should establish rare moments of emphasis without making the interface feel purple.
 
 ---
 
 ## 2.2 App Background
 
 ```text
-#0F1115
+#000000
 ```
 
-This is the primary application canvas.
+This is the primary application canvas: a pitch-black background.
 
 Use it for:
 
@@ -120,29 +116,26 @@ Use it for:
 * Page backgrounds
 * Empty surrounding space
 * Application shell
-* Authentication backgrounds when appropriate
 
-The background should remain visually quiet so that surfaces, text, and interactive elements establish hierarchy.
+The background should be true, near-pure black so that gray surfaces, text, and interactive elements establish hierarchy through contrast against it.
 
-Do not replace it with arbitrary Tailwind values such as:
+Prefer:
 
 ```text
 bg-black
-bg-gray-950
-bg-slate-950
 ```
 
-unless there is a specific design reason.
+or the explicit hex value `#000000` for the primary application canvas. This replaces the previous near-black `#0F1115` value — new and updated screens should use pitch black rather than a dark blue-gray tone.
 
 ---
 
 ## 2.3 Surface Background
 
 ```text
-#1A1D24
+#18181B
 ```
 
-This is the elevated surface color used to distinguish UI elements from the main application canvas.
+This is the elevated surface color used to distinguish UI elements from the pitch-black application background.
 
 Use it for:
 
@@ -155,16 +148,16 @@ Use it for:
 * Important grouped content
 * Elevated application areas
 
-Surfaces should provide subtle separation from the application background.
+Surfaces should provide subtle, neutral-gray separation from the pure black application background.
 
 Avoid creating many different surface colors.
 
 The primary hierarchy should generally be:
 
 ```text
-#0F1115
+#000000
      ↓
-#1A1D24
+#18181B
      ↓
 subtle border
      ↓
@@ -193,7 +186,7 @@ Use it for:
 * Important content
 * Primary button text when appropriate
 
-Primary text should provide strong contrast against the dark background without using pure white everywhere.
+Primary text should provide strong contrast against the pitch-black background without using pure white everywhere.
 
 Prefer:
 
@@ -245,51 +238,51 @@ The general color hierarchy should follow:
                   Primary Text
                        ↑
                        |
-#5E6AD2 ←──── Interaction / Accent
+#5E6AD2 ←──── Rare Accent / Focus
                        |
                        ↓
                   #94A3B8
                  Secondary Text
 
-#1A1D24 ←──── Elevated Surfaces
+#18181B ←──── Elevated Surfaces / Gray Controls
 
-#0F1115 ←──── Application Canvas
+#000000 ←──── Application Canvas (Pitch Black)
 ```
 
 The interface should primarily consist of:
 
 ```text
-App Background
+Pitch-Black App Background
       +
-Surface Background
+Gray Surface Background
       +
 Primary Text
       +
 Secondary Text
       +
-Accent
+Rare Accent
 ```
 ---
 
 ## 2.7 Navbar and Sidebar Colors
 
-The top navbar and left sidebar use dedicated shades that sit between the app background and elevated surfaces, giving the application shell a distinct sense of structure.
+The top navbar and left sidebar use dedicated near-black/gray shades that sit between the pitch-black app background and elevated gray surfaces, giving the application shell a distinct sense of structure.
 
 | Element                     | Color     | Usage / Visual Detail                                                          |
 | ---------------------------- | --------- | -------------------------------------------------------------------------------- |
-| Top Navbar                  | `#0D0E12` | Darker than the canvas; anchors search, notifications, and profile.             |
-| Left Sidebar                | `#12141A` | Slightly deeper shade between canvas and top bar for a distinct side panel.      |
-| Active Nav Item (BG)         | `#1E222D` | Active item background fill (e.g., current project or tab).                     |
-| Active Nav Item (Accent)     | `#5E6AD2` | Soft Indigo for icon/text or a 2px left border strip.                           |
-| Hover Nav Item (BG)          | `#171A21` | Subtle hover effect for inactive nav items.                                     |
-| Dividers & Borders           | `#222631` | 1px solid border separating sidebar/navbar from the canvas.                     |
+| Top Navbar                  | `#000000` | Pure black, matching the canvas; anchors search, notifications, and profile.    |
+| Left Sidebar                | `#000000` | Pure black, matching the canvas, separated primarily by a 1px border.           |
+| Active Nav Item (BG)         | `#27272A` | Active item background fill (e.g., current project or tab) — neutral gray.      |
+| Active Nav Item (Accent)     | `#5E6AD2` | Soft Indigo, used sparingly for icon/text or a 2px left border strip.           |
+| Hover Nav Item (BG)          | `#18181B` | Subtle gray hover effect for inactive nav items.                                |
+| Dividers & Borders           | `#27272A` | 1px solid border separating sidebar/navbar from the canvas.                     |
 
 Usage notes:
 
-* The top navbar and sidebar should **not** reuse `#0F1115` (App Background) or `#1A1D24` (Surface Background) directly — they use their own darker/deeper shades so the application shell reads as structurally distinct from both the canvas and elevated content surfaces.
-* Active nav items should combine `#1E222D` as the background fill with `#5E6AD2` as either the icon/text color or a 2px left-border accent strip — not both applied at full strength, to avoid overemphasis.
-* Hover states (`#171A21`) should only apply to inactive items; the active item's state should not change on hover.
-* Use `#222631` for the 1px border separating the navbar/sidebar from the main canvas, consistent with the broader restrained border system in Section 12.
+* The top navbar and sidebar should match the pitch-black `#000000` app background, with structure communicated through subtle `#27272A` borders rather than a distinct background shade.
+* Active nav items should primarily use `#27272A` as the background fill. The `#5E6AD2` accent should be reserved for rare emphasis (icon/text color or a 2px left-border accent strip) — not applied at full strength across the whole active state.
+* Hover states (`#18181B`) should only apply to inactive items; the active item's state should not change on hover.
+* Use `#27272A` for the 1px border separating the navbar/sidebar from the main canvas, consistent with the broader restrained border system in Section 12.
 
 Do not introduce additional colors unless they have a clear semantic purpose.
 
@@ -345,16 +338,13 @@ for secondary application text instead of creating arbitrary gray values.
 
 # 4. Accent and Semantic Colors
 
-`#5E6AD2` is the primary IssueForge accent.
+`#5E6AD2` is the primary IssueForge accent, used rarely and intentionally.
 
-Use it for interaction and emphasis rather than decoration.
+Use it for focus and rare emphasis rather than everyday interaction or decoration.
 
 Examples:
 
 ```text
-Active navigation
-    → #5E6AD2
-
 Focused input
     → #5E6AD2
 
@@ -365,9 +355,9 @@ Important link
     → #5E6AD2
 ```
 
-The accent should not automatically be used for every primary CTA.
+The accent should not automatically be used for every primary CTA or active state — everyday interactive elements (buttons, active tabs, active nav items) should default to the neutral gray system (`#27272A` / `#18181B`), reserving `#5E6AD2` for a small number of intentional highlights.
 
-For example, the authentication screen currently uses a high-contrast white primary CTA. This pattern may continue where strong contrast is more appropriate than an accent-colored button.
+The authentication screen currently uses a high-contrast white primary CTA. This legacy pattern may continue on authentication screens where strong contrast is more appropriate; new application screens should use the gray primary CTA described in Section 5.
 
 ---
 
@@ -421,8 +411,8 @@ For all **new application features**, use the current IssueForge palette:
 
 ```text
 #5E6AD2
-#0F1115
-#1A1D24
+#000000
+#18181B
 #E2E8F0
 #94A3B8
 ```
@@ -433,23 +423,24 @@ Do not mix the legacy purple and background values into new application screens 
 
 # 5. Primary Actions
 
-The current authentication screen establishes a **white primary action button**.
+New application screens (as established by the workspace overview, project, and dashboard views) use a **neutral gray primary action button** against the pitch-black canvas.
 
 Example:
 
 ```text
-bg-white
-text-black
-hover:bg-gray-300
+bg-zinc-800
+text-white
+hover:bg-zinc-700
 ```
 
-Primary actions should generally use a high-contrast white button against the dark background.
+Primary actions should generally use a moderate-contrast gray button rather than a stark white button.
 
 Examples:
 
 ```text
-Create account
-Log in
++ New
+Manage Workspace Members
+Add Member
 Create issue
 Create project
 Save changes
@@ -457,15 +448,17 @@ Save changes
 
 Primary button characteristics:
 
-* White background
-* Black/dark text
+* Neutral gray background (`#27272A`–`#3F3F46` range)
+* White/light text
 * Small to moderate radius
-* Clear hover state
+* Clear, slightly lighter hover state
 * Clear disabled state
-* Strong contrast
+* Moderate contrast against the pitch-black background
 * No unnecessary gradient
 
-The primary CTA should stand out because of **contrast**, not because of glow or excessive effects.
+The primary CTA should stand out through its gray surface and border against the pure black canvas, not through glow, excessive effects, or a stark white fill.
+
+The legacy white-background CTA (`bg-white` / `text-black`) remains valid only on the legacy authentication screen described in Section 26; all other primary actions should use the gray treatment above.
 
 ---
 
@@ -634,7 +627,7 @@ Borders should help establish structure without becoming visually dominant.
 
 # 13. Surfaces
 
-Use subtle white overlays to create hierarchy against the near-black background.
+Use subtle white overlays to create hierarchy against the pitch-black background.
 
 Preferred:
 
@@ -956,7 +949,7 @@ Icon-only controls must have accessible labels.
 
 # 26. Authentication Screens
 
-Authentication screens establish the strongest visual reference for the product.
+Authentication screens establish a legacy visual reference for the product and are treated as an exception to the pitch-black/gray system described above.
 
 The current register screen uses:
 
@@ -1001,7 +994,7 @@ Authentication screens may use:
 * More generous spacing
 * Marketing-style supporting copy
 
-Normal application pages should remain more information-dense.
+Normal application pages should remain more information-dense and should follow Section 2's pitch-black/gray palette rather than the legacy `#04020E` authentication background.
 
 ---
 
@@ -1030,9 +1023,9 @@ The active navigation item should be distinguishable using subtle emphasis.
 
 Preferred active-state techniques:
 
-* Slight background
+* Slight gray background (`#27272A`)
 * Increased text contrast
-* Purple accent
+* Rare purple accent
 * Small indicator
 
 Avoid extremely bright active states.
@@ -1284,9 +1277,9 @@ When implementing a new screen or component:
 
 1. Inspect existing screens before designing.
 2. Treat the existing authentication screen as a visual reference, but note it uses the legacy palette (`#04020E`, `#8D6FE8`, `#9A7EF0`) — do not carry those specific values into new application screens.
-3. Use `#0F1115` as the primary application background for new application screens.
-4. Use white as the default primary CTA unless the feature has a specific reason to use another treatment.
-5. Use the `#5E6AD2` accent sparingly, for interaction and emphasis rather than decoration.
+3. Use `#000000` (pitch black) as the primary application background for new application screens.
+4. Use a neutral gray (`bg-zinc-800` / `#27272A`, white text) as the default primary CTA for new application screens, rather than a stark white button, unless the feature has a specific reason to use another treatment.
+5. Use the `#5E6AD2` accent sparingly and rarely, for focus and intentional emphasis rather than everyday interaction or decoration.
 6. Use `#E2E8F0` (primary text) and `#94A3B8` (secondary text) for text hierarchy; reserve white opacity values (`white/5`–`white/20`) for subtle borders, hover states, and other transient treatments.
 7. Use subtle borders instead of heavy containers.
 8. Avoid excessive shadows and gradients.

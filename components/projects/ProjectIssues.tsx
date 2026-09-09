@@ -28,9 +28,9 @@ const STATUS_LABELS = {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  todo: "bg-[#2A2F3A]",
-  in_progress: "bg-[#3D3E5C]",
-  done: "bg-[#1F3A1F]",
+  todo: "bg-[#27272A]",
+  in_progress: "bg-[#3F3F46]",
+  done: "bg-[#166534]",
 }
 
 export default function ProjectIssues({
@@ -58,7 +58,7 @@ export default function ProjectIssues({
         <button
           type="button"
           onClick={onCreateIssue}
-          className="inline-flex items-center gap-2 rounded-md border border-[#2A2F3A] bg-[#11151A] px-3 py-1.5 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3A4050] hover:bg-[#171C22]"
+          className="inline-flex items-center gap-2 rounded-md border border-[#27272A] bg-[#18181B] px-3 py-1.5 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46] hover:bg-[#27272A]"
         >
           <Plus className="h-3.5 w-3.5" />
           Create Issue
@@ -73,14 +73,14 @@ export default function ProjectIssues({
             type="text"
             placeholder="Search issues..."
             onChange={(e) => onSearchChange?.(e.target.value)}
-            className="h-9 w-full rounded-md border border-[#2A2F3A] bg-[#101419] pl-8 pr-3 text-xs text-[#E2E8F0] placeholder:text-[#94A3B8]/70 focus:border-[#5E6AD2]/60 focus:outline-none"
+            className="h-9 w-full rounded-md border border-[#27272A] bg-[#18181B] pl-8 pr-3 text-xs text-[#E2E8F0] placeholder:text-[#94A3B8]/70 focus:border-[#5E6AD2]/60 focus:outline-none"
           />
         </div>
 
         <button
           type="button"
           onClick={onFilterChange}
-          className="inline-flex h-9 items-center gap-2.5 rounded-md border border-[#2A2F3A] bg-[#101419] px-3 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3A4050]"
+          className="inline-flex h-9 items-center gap-2.5 rounded-md border border-[#27272A] bg-[#18181B] px-3 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46]"
         >
           <Filter className="h-3.5 w-3.5" />
           <span>Filter</span>
@@ -89,7 +89,7 @@ export default function ProjectIssues({
         <button
           type="button"
           onClick={() => onSortChange?.("asc")}
-          className="inline-flex h-9 items-center gap-2 rounded-md border border-[#2A2F3A] bg-[#101419] px-3 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3A4050]"
+          className="inline-flex h-9 items-center gap-2 rounded-md border border-[#27272A] bg-[#18181B] px-3 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46]"
         >
           <span>Sort: asc, desc</span>
           <ChevronDown className="h-3.5 w-3.5" />
@@ -100,7 +100,7 @@ export default function ProjectIssues({
       <div className="grid gap-4 sm:grid-cols-3">
         {/* Todo Column */}
         <div className="space-y-3">
-          <div className="flex items-center gap-2 rounded-md bg-[#101419] px-3 py-2">
+          <div className="flex items-center gap-2 rounded-md bg-[#18181B] px-3 py-2">
             <div className={`h-2 w-2 rounded-full ${STATUS_COLORS.todo}`} />
             <h3 className="text-sm font-semibold text-[#E2E8F0]">
               {STATUS_LABELS.todo} ({groupedIssues.todo.length})
@@ -110,7 +110,7 @@ export default function ProjectIssues({
             {groupedIssues.todo.map((issue) => (
               <div
                 key={issue.id}
-                className="rounded-lg border border-[#2A2F3A] bg-[#11151A] p-3 transition-colors hover:border-[#3A4050]"
+                className="rounded-lg border border-[#27272A] bg-[#18181B] p-3 transition-colors hover:border-[#3F3F46]"
               >
                 <p className="line-clamp-2 text-sm font-medium text-[#E2E8F0]">
                   {issue.title}
@@ -127,7 +127,7 @@ export default function ProjectIssues({
 
         {/* In Progress Column */}
         <div className="space-y-3">
-          <div className="flex items-center gap-2 rounded-md bg-[#101419] px-3 py-2">
+          <div className="flex items-center gap-2 rounded-md bg-[#18181B] px-3 py-2">
             <div className={`h-2 w-2 rounded-full ${STATUS_COLORS.in_progress}`} />
             <h3 className="text-sm font-semibold text-[#E2E8F0]">
               {STATUS_LABELS.in_progress} ({groupedIssues.in_progress.length})
@@ -137,7 +137,7 @@ export default function ProjectIssues({
             {groupedIssues.in_progress.map((issue) => (
               <div
                 key={issue.id}
-                className="rounded-lg border border-[#2A2F3A] bg-[#11151A] p-3 transition-colors hover:border-[#3A4050]"
+                className="rounded-lg border border-[#27272A] bg-[#18181B] p-3 transition-colors hover:border-[#3F3F46]"
               >
                 <p className="line-clamp-2 text-sm font-medium text-[#E2E8F0]">
                   {issue.title}
@@ -154,7 +154,7 @@ export default function ProjectIssues({
 
         {/* Done Column */}
         <div className="space-y-3">
-          <div className="flex items-center gap-2 rounded-md bg-[#101419] px-3 py-2">
+          <div className="flex items-center gap-2 rounded-md bg-[#18181B] px-3 py-2">
             <div className={`h-2 w-2 rounded-full ${STATUS_COLORS.done}`} />
             <h3 className="text-sm font-semibold text-[#E2E8F0]">
               {STATUS_LABELS.done} ({groupedIssues.done.length})
@@ -164,7 +164,7 @@ export default function ProjectIssues({
             {groupedIssues.done.map((issue) => (
               <div
                 key={issue.id}
-                className="rounded-lg border border-[#2A2F3A] bg-[#11151A] p-3 transition-colors hover:border-[#3A4050]"
+                className="rounded-lg border border-[#27272A] bg-[#18181B] p-3 transition-colors hover:border-[#3F3F46]"
               >
                 <p className="line-clamp-2 text-sm font-medium text-[#E2E8F0]">
                   {issue.title}

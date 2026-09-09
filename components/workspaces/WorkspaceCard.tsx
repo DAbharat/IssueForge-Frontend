@@ -44,7 +44,7 @@ export default function WorkspaceCard({ id, name, createdAt, ownerName, onClick 
 
     return (
         <article
-            className="mx-auto w-full max-w-2xl cursor-pointer rounded-md border border-[#222631] bg-[#1A1D24] px-3.5 py-3 text-[#E2E8F0] shadow-[0_1px_0_rgba(255,255,255,0.02)] transition-colors hover:bg-[#1B1E27] focus:outline-none focus:ring-2 focus:ring-[#5E6AD2]/60 sm:px-4 sm:py-3.5"
+            className="mx-auto w-full max-w-2xl cursor-pointer rounded-md border border-[#27272A] bg-[#000000] px-3.5 py-3 text-[#E2E8F0] shadow-[0_1px_0_rgba(255,255,255,0.02)] transition-colors hover:bg-[#18181B] focus:outline-none focus:ring-2 focus:ring-[#5E6AD2]/60 sm:px-4 sm:py-3.5"
             onClick={onClick}
             onKeyDown={(event) => {
                 if ((event.key === "Enter" || event.key === " ") && onClick) {
@@ -56,7 +56,7 @@ export default function WorkspaceCard({ id, name, createdAt, ownerName, onClick 
             tabIndex={0}
         >
             <div className="flex items-center gap-3 sm:gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#222631] bg-[#DDE1E5] text-sm font-semibold text-[#0F1115] sm:h-12 sm:w-12 sm:text-base">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#27272A] bg-[#DDE1E5] text-sm font-semibold text-[#0F1115] sm:h-12 sm:w-12 sm:text-base">
                     {initials}
                 </div>
 
@@ -75,7 +75,7 @@ export default function WorkspaceCard({ id, name, createdAt, ownerName, onClick 
 
                     <div className="mt-1 flex items-center gap-x-2 text-[12px] text-[#94A3B8] sm:text-sm">
                         <span className="truncate">{formatJoinedDate(createdAt)}</span>
-                        <span className="shrink-0 text-[#222631]">•</span>
+                        <span className="shrink-0 text-[#27272A]">•</span>
                         <span className="truncate">Owner: {owner}</span>
                     </div>
                 </div>

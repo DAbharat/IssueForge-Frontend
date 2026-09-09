@@ -11,7 +11,7 @@ type ProjectTabsProps = {
 
 export default function ProjectTabs({ activeTab, onTabChange }: ProjectTabsProps) {
   return (
-    <div className="grid grid-cols-3 items-end border-b border-[#222631] pb-2" role="tablist" aria-label="Project sections">
+    <div className="grid grid-cols-3 items-end border-b border-[#27272A] pb-2" role="tablist" aria-label="Project sections">
       {PROJECT_TABS.map((tab) => {
         const isActive = activeTab === tab
 
