@@ -7,6 +7,8 @@ export type Issue = {
     description?: string;
     status?: string;
     priority?: string;
+    assigned_to?: string | number;
+    assignee_name?: string;
     assignee_id?: string;
     creator_id?: string;
     project_id?: string;
@@ -50,6 +52,7 @@ export async function createIssue(projectId: string | number, data: CreateIssueR
 export async function getIssueById(issueId: string | number) {
     try {
         const response = await axiosClient.get<Issue>(`/api/issues/${issueId}`);
+        //console.log("response:", response.data)
         return response.data;
     } catch (error) {
         throw new Error(getErrorMessage(error, "An error occurred while fetching the issue."));

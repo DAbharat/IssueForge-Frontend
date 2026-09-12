@@ -14,6 +14,7 @@ import {
   listProjectMembers,
   type ProjectMember,
 } from "@/services/projectMembers.service"
+import { useRouter } from "next/navigation"
 
 type PageProps = {
   params: Promise<{
@@ -29,6 +30,7 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
   const [members, setMembers] = useState<ProjectMemberItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter();
 
   // Resolve params from Promise
   useEffect(() => {
@@ -58,43 +60,43 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
 
         const mappedIssues: ProjectIssueItem[] = Array.isArray(issuesData)
           ? issuesData.map((issue: Issue) => {
-              // Map backend status values to component format
-              let status: "todo" | "in_progress" | "done" = "todo"
-              if (
-                issue.status?.toUpperCase() === "IN_PROGRESS" ||
-                issue.status?.toLowerCase() === "in_progress"
-              ) {
-                status = "in_progress"
-              } else if (
-                issue.status?.toUpperCase() === "DONE" ||
-                issue.status?.toLowerCase() === "done"
-              ) {
-                status = "done"
-              } else if (
-                issue.status?.toUpperCase() === "TODO" ||
-                issue.status?.toLowerCase() === "todo"
-              ) {
-                status = "todo"
-              }
+            // Map backend status values to component format
+            let status: "todo" | "in_progress" | "done" = "todo"
+            if (
+              issue.status?.toUpperCase() === "IN_PROGRESS" ||
+              issue.status?.toLowerCase() === "in_progress"
+            ) {
+              status = "in_progress"
+            } else if (
+              issue.status?.toUpperCase() === "DONE" ||
+              issue.status?.toLowerCase() === "done"
+            ) {
+              status = "done"
+            } else if (
+              issue.status?.toUpperCase() === "TODO" ||
+              issue.status?.toLowerCase() === "todo"
+            ) {
+              status = "todo"
+            }
 
-              // Map priority to valid values
-              let priority: "low" | "medium" | "high" | undefined
-              if (issue.priority) {
-                const p = issue.priority.toLowerCase()
-                if (["low", "medium", "high"].includes(p)) {
-                  priority = p as "low" | "medium" | "high"
-                }
+            // Map priority to valid values
+            let priority: "low" | "medium" | "high" | undefined
+            if (issue.priority) {
+              const p = issue.priority.toLowerCase()
+              if (["low", "medium", "high"].includes(p)) {
+                priority = p as "low" | "medium" | "high"
               }
+            }
 
-              return {
-                id: issue.id,
-                title: issue.title,
-                description: issue.description,
-                status,
-                priority,
-                createdAt: issue.created_at,
-              }
-            })
+            return {
+              id: issue.id,
+              title: issue.title,
+              description: issue.description,
+              status,
+              priority,
+              createdAt: issue.created_at,
+            }
+          })
           : []
 
         setIssues(mappedIssues)
@@ -105,23 +107,23 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
 
         const mappedMembers: ProjectMemberItem[] = Array.isArray(membersData)
           ? membersData.map((member: ProjectMember) => {
-              // Build initials from fullname
-              const fullname = (member as any).fullname || "Member"
-              const initials = fullname
-                .split(/\s+/)
-                .filter(Boolean)
-                .slice(0, 2)
-                .map((part: string) => part.charAt(0).toUpperCase())
-                .join("") || "M"
+            // Build initials from fullname
+            const fullname = (member as any).fullname || "Member"
+            const initials = fullname
+              .split(/\s+/)
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((part: string) => part.charAt(0).toUpperCase())
+              .join("") || "M"
 
-              return {
-                id: member.id,
-                fullname,
-                username: (member as any).username || "",
-                role: "Member",
-                initials,
-              }
-            })
+            return {
+              id: member.id,
+              fullname,
+              username: (member as any).username || "",
+              role: "Member",
+              initials,
+            }
+          })
           : []
 
         setMembers(mappedMembers)
@@ -172,103 +174,139 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#000000] p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        {/* Project Header */}
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-[#E2E8F0]">{project.name}</h1>
-          {project.description && (
-            <p className="text-[#94A3B8]">{project.description}</p>
-          )}
-        </div>
+  <div className="min-h-screen bg-[#000000] p-4 sm:p-6 lg:p-8">
+    <div className="mx-auto max-w-7xl space-y-10">
+      {/* Project Header */}
+      <div className="space-y-5 pb-2">
+        <h1 className="text-3xl font-bold tracking-[-0.02em] text-[#E2E8F0]">
+          {project.name}
+        </h1>
 
-        {/* Tabs */}
-        <div className="border-b border-[#27272A]">
-          <ProjectTabs activeTab={activeTab} onTabChange={setActiveTab} />
-        </div>
+        {project.description && (
+          <p className="max-w-3xl text-sm leading-relaxed text-[#94A3B8]">
+            <span className="font-bold text-[#E2E8F0]">Description:</span>{" "}
+            {project.description}
+          </p>
+        )}
 
-        {/* Tab Content */}
-        <div>
-          {activeTab === "Overview" && (
-            <div className="space-y-4">
-              <div className="rounded-xl border border-[#27272A] bg-[#18181B] p-5">
-                <h2 className="mb-3 text-lg font-semibold text-[#E2E8F0]">
-                  Project Overview
-                </h2>
-                <div className="space-y-2 text-sm text-[#94A3B8]">
-                  <p>
-                    <span className="font-medium text-[#E2E8F0]">Name:</span>{" "}
-                    {project.name}
-                  </p>
-                  {project.description && (
-                    <p>
-                      <span className="font-medium text-[#E2E8F0]">
-                        Description:
-                      </span>{" "}
-                      {project.description}
-                    </p>
-                  )}
-                  {project.lead_name && (
-                    <p>
-                      <span className="font-medium text-[#E2E8F0]">Lead:</span>{" "}
-                      {project.lead_name}
-                    </p>
-                  )}
-                  {project.created_at && (
-                    <p>
-                      <span className="font-medium text-[#E2E8F0]">
-                        Created:
-                      </span>{" "}
-                      {new Date(project.created_at).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-[#27272A] bg-[#18181B] p-5">
-                <h2 className="mb-4 text-lg font-semibold text-[#E2E8F0]">
-                  Statistics
-                </h2>
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="rounded-lg border border-[#27272A] bg-[#18181B] p-4">
-                    <p className="text-xs text-[#94A3B8]">Total Issues</p>
-                    <p className="text-2xl font-bold text-[#E2E8F0]">
-                      {issues.length}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-[#27272A] bg-[#18181B] p-4">
-                    <p className="text-xs text-[#94A3B8]">Team Members</p>
-                    <p className="text-2xl font-bold text-[#E2E8F0]">
-                      {members.length}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-[#27272A] bg-[#18181B] p-4">
-                    <p className="text-xs text-[#94A3B8]">Completed Issues</p>
-                    <p className="text-2xl font-bold text-[#E2E8F0]">
-                      {issues.filter((i) => i.status === "done").length}
-                    </p>
-                  </div>
-                </div>
-              </div>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-1 text-sm text-[#94A3B8]">
+          {project.lead_name && (
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-[#E2E8F0]">Lead:</span>
+              <span>{project.lead_name}</span>
             </div>
           )}
 
-          {activeTab === "Issues" && (
-            <ProjectIssues
-              projectName={project.name}
-              issues={issues}
-              onCreateIssue={() => console.log("Create issue")}
-              onSearchChange={() => console.log("Search")}
-              onFilterChange={() => console.log("Filter")}
-              onSortChange={() => console.log("Sort")}
-            />
-          )}
-
-          {activeTab === "Members" && (
-            <ProjectMembers members={members} />
+          {project.created_at && (
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-[#E2E8F0]">Created:</span>
+              <span>
+                {new Date(project.created_at).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </span>
+            </div>
           )}
         </div>
       </div>
+
+      {/* Tabs */}
+      <div className="border-b border-[#27272A] pt-6">
+        <ProjectTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      </div>
+
+      {/* Tab Content */}
+      <div>
+        {activeTab === "Overview" && (
+          <div className="space-y-6">
+            {/* ── Statistics Cards ── */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 backdrop-blur-sm">
+                <p className="text-xs font-medium text-zinc-400">Total Issues</p>
+                <p className="mt-2 text-2xl font-bold tracking-tight text-zinc-50 tabular-nums">
+                  {issues.length}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 backdrop-blur-sm">
+                <p className="text-xs font-medium text-zinc-400">Team Members</p>
+                <p className="mt-2 text-2xl font-bold tracking-tight text-zinc-50 tabular-nums">
+                  {members.length}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 backdrop-blur-sm">
+                <p className="text-xs font-medium text-zinc-400">Completed Issues</p>
+                <p className="mt-2 text-2xl font-bold tracking-tight text-zinc-50 tabular-nums">
+                  {issues.filter((i) => i.status === "done").length}
+                </p>
+              </div>
+            </div>
+
+            {/* ── Project Details ── */}
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-sm">
+              <h2 className="mb-4 text-sm font-semibold text-zinc-100">
+                Project Details
+              </h2>
+
+              <div className="space-y-4 text-sm">
+                <div className="grid grid-cols-1 items-start gap-1 sm:grid-cols-4 sm:gap-4">
+                  <span className="text-xs font-medium text-zinc-400">Name</span>
+                  <span className="text-zinc-200 sm:col-span-3">{project.name}</span>
+                </div>
+
+                {project.description && (
+                  <div className="grid grid-cols-1 items-start gap-1 border-t border-zinc-800/60 pt-4 sm:grid-cols-4 sm:gap-4">
+                    <span className="text-xs font-medium text-zinc-400">
+                      Description
+                    </span>
+                    <span className="leading-relaxed text-zinc-300 sm:col-span-3">
+                      {project.description}
+                    </span>
+                  </div>
+                )}
+
+                {project.lead_name && (
+                  <div className="grid grid-cols-1 items-start gap-1 border-t border-zinc-800/60 pt-4 sm:grid-cols-4 sm:gap-4">
+                    <span className="text-xs font-medium text-zinc-400">Lead</span>
+                    <span className="text-zinc-200 sm:col-span-3">
+                      {project.lead_name}
+                    </span>
+                  </div>
+                )}
+
+                {project.created_at && (
+                  <div className="grid grid-cols-1 items-start gap-1 border-t border-zinc-800/60 pt-4 sm:grid-cols-4 sm:gap-4">
+                    <span className="text-xs font-medium text-zinc-400">Created</span>
+                    <span className="text-zinc-200 sm:col-span-3">
+                      {new Date(project.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "Issues" && (
+          <ProjectIssues
+            projectName={project.name}
+            issues={issues}
+            onCreateIssue={() => console.log("Create issue")}
+            onSearchChange={() => console.log("Search")}
+            onFilterChange={() => console.log("Filter")}
+            onSortChange={() => console.log("Sort")}
+            onClick={(issueId: any) =>
+              router.push(`/projects/${projectID}/issues/${issueId}`)
+            }
+          />
+        )}
+
+        {activeTab === "Members" && <ProjectMembers members={members} />}
+      </div>
     </div>
-  )
+  </div>
+)
 }

@@ -44,7 +44,7 @@ export default function WorkspaceCard({ id, name, createdAt, ownerName, onClick 
 
     return (
         <article
-            className="mx-auto w-full max-w-2xl cursor-pointer rounded-md border border-[#27272A] bg-[#000000] px-3.5 py-3 text-[#E2E8F0] shadow-[0_1px_0_rgba(255,255,255,0.02)] transition-colors hover:bg-[#18181B] focus:outline-none focus:ring-2 focus:ring-[#5E6AD2]/60 sm:px-4 sm:py-3.5"
+            className="mx-auto w-full max-w-2xl cursor-pointer rounded-md border border-[#27272A] bg-[#18181B] px-3.5 py-3 text-[#E2E8F0] shadow-[0_1px_0_rgba(255,255,255,0.02)] transition-colors hover:bg-[#18181B] focus:outline-none focus:ring-2 focus:ring-[#5E6AD2]/60 sm:px-4 sm:py-3.5"
             onClick={onClick}
             onKeyDown={(event) => {
                 if ((event.key === "Enter" || event.key === " ") && onClick) {

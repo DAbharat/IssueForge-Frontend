@@ -20,7 +20,10 @@ export type WorkspaceMembersOverviewProps = {
   onSearchChange?: (value: string) => void
   onStatusChange?: () => void
   onManageMembers?: () => void
+  onShowAllMembers?: () => void
 }
+
+const MAX_VISIBLE_MEMBERS = 3
 
 export default function WorkspaceMembersOverview({
   title = "Members",
@@ -31,7 +34,15 @@ export default function WorkspaceMembersOverview({
   onSearchChange,
   onStatusChange,
   onManageMembers,
+  onShowAllMembers,
 }: WorkspaceMembersOverviewProps) {
+  const hasOverflow = members.length > MAX_VISIBLE_MEMBERS
+  const visibleMembers = hasOverflow
+    ? members.slice(0, MAX_VISIBLE_MEMBERS)
+    : members
+
+  const remainingCount = members.length - MAX_VISIBLE_MEMBERS
+
   return (
     <div className="w-full">
       {/* Header row: Title + Manage Button */}
@@ -51,7 +62,7 @@ export default function WorkspaceMembersOverview({
       </div>
 
       {/* Control row: Search field + Active/Pending + View All */}
-      <div className="mb-4 flex flex-col gap-2.5 sm:flex-row sm:items-center">
+      <div className="mb-5 flex flex-col gap-2.5 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94A3B8]" />
           <input
@@ -80,12 +91,12 @@ export default function WorkspaceMembersOverview({
         </button>
       </div>
 
-      {/* Member list with avatars and names */}
-      <div className="flex flex-wrap items-center gap-4">
-        {members.slice(0, 6).map((member) => (
+      {/* Member list — fixed-width items for consistent grid alignment */}
+      <div className="flex flex-wrap items-start gap-3">
+        {visibleMembers.map((member) => (
           <div
             key={member.id ?? member.username ?? member.fullname}
-            className="flex flex-col items-center gap-1.5"
+            className="flex w-16 flex-col items-center gap-1.5"
           >
             <div
               className="flex h-10 w-10 items-center justify-center rounded-full border border-[#000000] bg-[#DDE1E5] text-xs font-semibold text-[#000000] shadow-[0_0_0_2px_rgba(0,0,0,0.8)]"
@@ -93,24 +104,41 @@ export default function WorkspaceMembersOverview({
             >
               {member.initials}
             </div>
-            <span className="max-w-15 truncate text-center text-[10px] text-[#94A3B8]">
+            <span className="w-full truncate text-center text-[10px] leading-tight text-[#94A3B8]">
               {member.fullname}
             </span>
           </div>
         ))}
 
-        <button
-          type="button"
-          onClick={onManageMembers}
-          className="flex flex-col items-center gap-1.5"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#27272A] bg-[#18181B] text-[#E2E8F0] transition-colors hover:border-[#3F3F46] hover:bg-[#27272A]">
-            <Plus className="h-4 w-4" />
-          </div>
-          <span className="max-w-15 truncate text-center text-[10px] text-[#94A3B8]">
-            Add Member
-          </span>
-        </button>
+        {/* Overflow: blurred "+N" indicator when there are more than 3 members */}
+        {hasOverflow ? (
+          <button
+            type="button"
+            onClick={onShowAllMembers}
+            className="flex w-16 flex-col items-center gap-1.5"
+          >
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[#27272A] bg-[#18181B] text-xs font-semibold text-[#E2E8F0] blur-[0.6px] transition-all hover:blur-0 hover:border-[#3F3F46] hover:bg-[#27272A]">
+              +{remainingCount}
+            </div>
+            <span className="w-full truncate text-center text-[10px] leading-tight text-[#94A3B8]">
+              Show all members
+            </span>
+          </button>
+        ) : (
+          /* Add Member action (only shown when all members fit) */
+          <button
+            type="button"
+            onClick={onManageMembers}
+            className="flex w-16 flex-col items-center gap-1.5"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#27272A] bg-[#18181B] text-[#E2E8F0] transition-colors hover:border-[#3F3F46] hover:bg-[#27272A]">
+              <Plus className="h-4 w-4" />
+            </div>
+            <span className="w-full truncate text-center text-[10px] leading-tight text-[#94A3B8]">
+              Add Member
+            </span>
+          </button>
+        )}
       </div>
     </div>
   )
