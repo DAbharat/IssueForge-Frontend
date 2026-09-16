@@ -7,6 +7,7 @@ import ProjectIssues, {
 } from "@/components/projects/ProjectIssues"
 import ProjectMembers, {
   type ProjectMemberItem,
+  type WorkspaceMemberOption,
 } from "@/components/projects/ProjectMembers"
 import CreateIssueCard, {
   type CreateIssueMember,
@@ -15,9 +16,17 @@ import CreateIssueCard, {
 import { getProjectById, type Project } from "@/services/projects.service"
 import { listProjectIssues, createIssue, type Issue } from "@/services/issues.service"
 import {
+  addMemberToProject,
   listProjectMembers,
   type ProjectMember,
 } from "@/services/projectMembers.service"
+import {
+  addWorkspaceMember,
+  listWorkspaceMembers,
+  type WorkspaceMember,
+} from "@/services/workspaceMembers.service"
+import { searchUsers } from "@/services/account.service"
+import { useProfile } from "@/hooks/use-profile"
 import { useRouter } from "next/navigation"
 
 type PageProps = {
@@ -32,11 +41,14 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
   const [project, setProject] = useState<Project | null>(null)
   const [issues, setIssues] = useState<ProjectIssueItem[]>([])
   const [members, setMembers] = useState<ProjectMemberItem[]>([])
+  const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMemberOption[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   // ── Create issue ──────────────────────────────────────────────────────────
   const [showCreateIssue, setShowCreateIssue] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
+  const [isAddingMember, setIsAddingMember] = useState(false)
+  const { profile } = useProfile()
   const router = useRouter()
 
   // Resolve params from Promise
@@ -130,7 +142,7 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
               String(memberId) === String(projectData.lead_id)
 
             return {
-              id: member.id,
+              id: member.user_id ?? member.id,
               fullname,
               username: (member as any).username || "",
               role: isLead ? "Lead" : "Member",
@@ -140,6 +152,68 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
           : []
 
         setMembers(mappedMembers)
+
+        // Fetch workspace members and system users for the add-member picker.
+        const wsId = projectData.workspace_id ?? profile?.workspaces?.[0]?.id
+        const userMap = new Map<string, WorkspaceMemberOption>()
+
+        // 1. Fetch system users
+        try {
+          const allUsers = await searchUsers("")
+          if (!cancelled && Array.isArray(allUsers)) {
+            allUsers.forEach((u) => {
+              const ufullname = u.fullname || u.username || "User"
+              const uinitials =
+                ufullname
+                  .split(/\s+/)
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((p) => p.charAt(0).toUpperCase())
+                  .join("") || "U"
+              userMap.set(String(u.id), {
+                id: u.id,
+                fullname: ufullname,
+                username: u.username || "",
+                initials: uinitials,
+              })
+            })
+          }
+        } catch {
+          // ignore user search error
+        }
+
+        // 2. Overlay direct workspace members
+        if (wsId) {
+          try {
+            const wsMembersData = await listWorkspaceMembers(wsId)
+            if (!cancelled && Array.isArray(wsMembersData)) {
+              wsMembersData.forEach((wm: WorkspaceMember) => {
+                const id = wm.user_id ?? wm.id
+                if (id === undefined || id === null) return
+                const wfullname = wm.fullname || wm.username || "Member"
+                const winitials =
+                  wfullname
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((p) => p.charAt(0).toUpperCase())
+                    .join("") || "M"
+                userMap.set(String(id), {
+                  id,
+                  fullname: wfullname,
+                  username: wm.username || "",
+                  initials: winitials,
+                })
+              })
+            }
+          } catch (wsErr) {
+            console.error("[ProjectPage] Failed to load workspace members for picker:", wsErr)
+          }
+        }
+
+        if (!cancelled) {
+          setWorkspaceMembers(Array.from(userMap.values()))
+        }
       } catch (err) {
         if (!cancelled) {
           setError(
@@ -161,6 +235,13 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
       cancelled = true
     }
   }, [projectID])
+
+  // ── Derived: is the current viewer the project lead ───────────────────────
+  const currentUserId = profile?.id
+  const isLead =
+    currentUserId !== undefined &&
+    project?.lead_id !== undefined &&
+    String(currentUserId) === String(project.lead_id)
 
   // ── Derived: members shaped for CreateIssueCard ───────────────────────────
   const cardMembers: CreateIssueMember[] = members.map((m) => ({
@@ -198,6 +279,57 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
       // silently swallow for now — a toast system can be added later
     } finally {
       setIsCreating(false)
+    }
+  }
+
+  // ── Add member to project ─────────────────────────────────────────────────
+  async function handleAddMember(userId: string | number) {
+    if (!projectID) return
+    setIsAddingMember(true)
+    try {
+      // Ensure user is added to the workspace first if not already a member
+      const wsId = project?.workspace_id ?? profile?.workspaces?.[0]?.id
+      if (wsId) {
+        try {
+          await addWorkspaceMember(wsId, userId)
+        } catch {
+          // ignore if already in workspace
+        }
+      }
+
+      await addMemberToProject(projectID, userId)
+
+      // Refresh project members list
+      const refreshed = await listProjectMembers(projectID)
+      if (Array.isArray(refreshed)) {
+        const mapped: ProjectMemberItem[] = refreshed.map((member: ProjectMember) => {
+          const fullname = (member as any).fullname || "Member"
+          const initials =
+            fullname
+              .split(/\s+/)
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((p: string) => p.charAt(0).toUpperCase())
+              .join("") || "M"
+          const memberId = member.user_id ?? member.id
+          const lead =
+            memberId !== undefined &&
+            project?.lead_id !== undefined &&
+            String(memberId) === String(project.lead_id)
+          return {
+            id: member.user_id ?? member.id,
+            fullname,
+            username: (member as any).username || "",
+            role: lead ? "Lead" : "Member",
+            initials,
+          }
+        })
+        setMembers(mapped)
+      }
+    } catch (err) {
+      console.error("[ProjectPage] Error adding member:", err)
+    } finally {
+      setIsAddingMember(false)
     }
   }
 
@@ -366,7 +498,15 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
           </div>
         )}
 
-        {activeTab === "Members" && <ProjectMembers members={members} />}
+        {activeTab === "Members" && (
+          <ProjectMembers
+            members={members}
+            workspaceMembers={workspaceMembers}
+            isLead={isLead}
+            isAddingMember={isAddingMember}
+            onAddMember={handleAddMember}
+          />
+        )}
       </div>
     </div>
   </div>

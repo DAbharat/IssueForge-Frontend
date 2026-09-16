@@ -18,9 +18,12 @@ const getErrorMessage = (error: unknown, fallback: string) => {
     return axiosError.response?.data?.message || axiosError.response?.data?.error || axiosError.message || fallback;
 };
 
-export async function addWorkspaceMember(workspaceId: string | number, userId: string | number) {
+export async function addWorkspaceMember(workspaceId: string | number, userId: string | number, role: string = "MEMBER") {
     try {
-        const response = await axiosClient.post<WorkspaceMember>(`/api/workspaces/${workspaceId}/members`, { user_id: userId });
+        const response = await axiosClient.post<WorkspaceMember>(`/api/workspaces/${workspaceId}/members`, {
+            user_id: Number(userId),
+            role,
+        });
         return response.data;
     } catch (error) {
         throw new Error(getErrorMessage(error, "An error occurred while adding the workspace member."));

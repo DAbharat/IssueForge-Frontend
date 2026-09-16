@@ -23,12 +23,12 @@ export type WorkspaceMembersOverviewProps = {
   onShowAllMembers?: () => void
 }
 
-const MAX_VISIBLE_MEMBERS = 3
+const MAX_VISIBLE_MEMBERS = 2
 
 export default function WorkspaceMembersOverview({
   title = "Members",
-  members,
-  activeCount = 0,
+  members = [],
+  activeCount,
   pendingCount = 0,
   searchPlaceholder = "Search members...",
   onSearchChange,
@@ -36,12 +36,13 @@ export default function WorkspaceMembersOverview({
   onManageMembers,
   onShowAllMembers,
 }: WorkspaceMembersOverviewProps) {
-  const hasOverflow = members.length > MAX_VISIBLE_MEMBERS
-  const visibleMembers = hasOverflow
-    ? members.slice(0, MAX_VISIBLE_MEMBERS)
-    : members
+  const visibleMembers = members.slice(0, MAX_VISIBLE_MEMBERS)
 
-  const remainingCount = members.length - MAX_VISIBLE_MEMBERS
+  const totalMembersCount = members.length
+  const computedActiveCount =
+    activeCount !== undefined && activeCount > 0
+      ? activeCount
+      : members.filter((m) => m.status !== "pending").length
 
   return (
     <div className="w-full">
@@ -78,15 +79,16 @@ export default function WorkspaceMembersOverview({
           onClick={onStatusChange}
           className="inline-flex h-9 shrink-0 items-center justify-between gap-1.5 rounded-md border border-[#27272A] bg-[#18181B] px-3 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46]"
         >
-          <span>Active ({activeCount}) / Pending ({pendingCount})</span>
+          <span>Active ({computedActiveCount}) / Pending ({pendingCount})</span>
           <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[#94A3B8]" />
         </button>
 
         <button
           type="button"
+          onClick={onShowAllMembers}
           className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-[#27272A] bg-transparent px-3 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46] hover:bg-white/3"
         >
-          <span>View All ({members.length})</span>
+          <span>View All ({totalMembersCount})</span>
           <ChevronDown className="h-3.5 w-3.5 text-[#94A3B8]" />
         </button>
       </div>
@@ -110,35 +112,20 @@ export default function WorkspaceMembersOverview({
           </div>
         ))}
 
-        {/* Overflow: blurred "+N" indicator when there are more than 3 members */}
-        {hasOverflow ? (
-          <button
-            type="button"
-            onClick={onShowAllMembers}
-            className="flex w-16 flex-col items-center gap-1.5"
-          >
-            <div className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[#27272A] bg-[#18181B] text-xs font-semibold text-[#E2E8F0] blur-[0.6px] transition-all hover:blur-0 hover:border-[#3F3F46] hover:bg-[#27272A]">
-              +{remainingCount}
-            </div>
-            <span className="w-full truncate text-center text-[10px] leading-tight text-[#94A3B8]">
-              Show all members
-            </span>
-          </button>
-        ) : (
-          /* Add Member action (only shown when all members fit) */
-          <button
-            type="button"
-            onClick={onManageMembers}
-            className="flex w-16 flex-col items-center gap-1.5"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#27272A] bg-[#18181B] text-[#E2E8F0] transition-colors hover:border-[#3F3F46] hover:bg-[#27272A]">
-              <Plus className="h-4 w-4" />
-            </div>
-            <span className="w-full truncate text-center text-[10px] leading-tight text-[#94A3B8]">
-              Add Member
-            </span>
-          </button>
-        )}
+        {/* View All Members Avatar Button */}
+        <button
+          type="button"
+          onClick={onShowAllMembers}
+          className="group flex w-16 flex-col items-center gap-1.5 text-left focus:outline-none"
+          title="View all members"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#000000] bg-[#DDE1E5] text-xs font-semibold text-[#000000] shadow-[0_0_0_2px_rgba(0,0,0,0.8)] blur-[0.8px] transition-all group-hover:blur-none group-hover:scale-105">
+            A
+          </div>
+          <span className="w-full truncate text-center text-[10px] leading-tight text-[#94A3B8] transition-colors group-hover:text-[#E2E8F0]">
+            All Members
+          </span>
+        </button>
       </div>
     </div>
   )

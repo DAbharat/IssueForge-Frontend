@@ -42,3 +42,22 @@ export async function me() {
         throw new Error(axiosError.response?.data.message || "An error occurred while fetching account")
     }
 }
+
+export type SearchUserResult = {
+    id: number;
+    username: string;
+    fullname: string;
+};
+
+export async function searchUsers(query: string = "") {
+    try {
+        const response = await axiosClient.get<SearchUserResult[]>(`/api/users/search`, {
+            params: query ? { search: query } : {},
+        });
+        return response.data;
+    } catch (error) {
+        const axiosError = error as AxiosError<ApiResponse>;
+        console.error("Error searching users: ", axiosError.response?.data.message || axiosError.message);
+        return [];
+    }
+}

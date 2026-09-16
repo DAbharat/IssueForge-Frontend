@@ -20,7 +20,7 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 
 export async function addMemberToProject(projectId: string | number, userId: string | number) {
     try {
-        const response = await axiosClient.post<ProjectMember>(`/api/projects/${projectId}/members`, { user_id: userId });
+        const response = await axiosClient.post<ProjectMember>(`/api/projects/${projectId}/members`, { user_id: Number(userId) });
         return response.data;
     } catch (error) {
         throw new Error(getErrorMessage(error, "An error occurred while adding the project member."));

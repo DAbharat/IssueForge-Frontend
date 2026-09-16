@@ -31,7 +31,7 @@ export default function ProjectCard({
   return (
     <article
       id={id ? String(id) : undefined}
-      className="group relative mx-auto flex w-full max-w-155 min-h-55 cursor-pointer flex-col overflow-hidden rounded-sm border border-white/8 bg-[#18181B] p-5 text-[#E2E8F0] transition-all duration-200 hover:-translate-y-0.5 hover:border-white/16 focus:outline-none focus:ring-2 focus:ring-[#5E6AD2]/60 sm:min-h-57.5"
+      className="group relative mx-auto flex w-full max-w-155 min-h-55 cursor-pointer flex-col overflow-hidden rounded-sm border border-white/8 bg-[#101012] p-5 text-[#E2E8F0] transition-all duration-200 hover:-translate-y-0.5 hover:border-white/16 focus:outline-none focus:ring-2 focus:ring-[#5E6AD2]/60 sm:min-h-57.5"
       onClick={onClick}
       onKeyDown={(event) => {
         if ((event.key === "Enter" || event.key === " ") && onClick) {
@@ -43,7 +43,7 @@ export default function ProjectCard({
       tabIndex={0}
     >
       {/* Top highlight stroke */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/15 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-to-r from-transparent via-white/15 to-transparent]" />
 
       {/* Header row: icon + title, both vertically centered on the same line */}
       <header className="flex items-center gap-2.5">

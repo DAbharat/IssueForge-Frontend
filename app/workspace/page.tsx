@@ -5,15 +5,16 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 
 import ProjectCard from "@/components/projects/ProjectCard"
+import CreateProjectCard, { type CreateProjectPayload } from "@/components/projects/CreateProjectCard"
 import WorkspaceMembersOverview, {
   type WorkspaceMemberOverviewItem,
 } from "@/components/workspace-members/WorkspaceMembersOverview"
+import WorkspaceMembersDialog from "@/components/workspace-members/WorkspaceMembersDialog"
 import { useProfile } from "@/hooks/use-profile"
-import { listProjectsByLead, type Project } from "@/services/projects.service"
-import {
-  listWorkspaceMembers,
-  type WorkspaceMember,
-} from "@/services/workspaceMembers.service"
+import { createProject, listProjectsByLead, type Project } from "@/services/projects.service"
+import { listProjectMembers, type ProjectMember } from "@/services/projectMembers.service"
+import { searchUsers } from "@/services/account.service"
+import { listWorkspaceMembers, type WorkspaceMember } from "@/services/workspaceMembers.service"
 
 export default function WorkspacePage() {
   const searchParams = useSearchParams()
@@ -24,6 +25,9 @@ export default function WorkspacePage() {
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [members, setMembers] = useState<WorkspaceMemberOverviewItem[]>([])
   const [isLoadingMembers, setIsLoadingMembers] = useState(false)
+  const [showCreateProject, setShowCreateProject] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+  const [showMembersDialog, setShowMembersDialog] = useState(false)
   const router = useRouter();
 
   useEffect(() => {
@@ -52,66 +56,128 @@ export default function WorkspacePage() {
     const activeWorkspaceId: string | number = workspaceId
     let cancelled = false
 
-    async function loadProjects() {
+    async function loadData() {
       setIsLoadingProjects(true)
-
-      try {
-        const response = await listProjectsByLead(activeWorkspaceId)
-        if (!cancelled) {
-          setProjects(Array.isArray(response) ? response : [])
-        }
-      } catch {
-        if (!cancelled) {
-          setProjects([])
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoadingProjects(false)
-        }
-      }
-    }
-
-    async function loadMembers() {
       setIsLoadingMembers(true)
 
       try {
-        const response = await listWorkspaceMembers(activeWorkspaceId)
+        const fetchedProjects = await listProjectsByLead(activeWorkspaceId)
+        const projectList = Array.isArray(fetchedProjects) ? fetchedProjects : []
         if (!cancelled) {
-          const nextMembers: WorkspaceMemberOverviewItem[] = Array.isArray(response)
-            ? response.map((member: WorkspaceMember) => {
-              const fullname = member.fullname || member.username || "Member"
-              const initials = fullname
-                .split(/\s+/)
-                .filter(Boolean)
-                .slice(0, 2)
-                .map((part) => part.charAt(0).toUpperCase())
-                .join("") || "M"
+          setProjects(projectList)
+        }
 
-              return {
-                id: member.id,
+        const memberMap = new Map<string | number, WorkspaceMemberOverviewItem>()
+
+        // 1. Load direct workspace members
+        try {
+          const wsMembers = await listWorkspaceMembers(activeWorkspaceId)
+          if (Array.isArray(wsMembers)) {
+            wsMembers.forEach((member: WorkspaceMember) => {
+              const userId = member.user_id ?? member.id
+              if (userId === undefined || userId === null) return
+              const fullname = member.fullname || member.username || "Member"
+              const initials =
+                fullname
+                  .split(/\s+/)
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((part) => part.charAt(0).toUpperCase())
+                  .join("") || "M"
+
+              memberMap.set(String(userId), {
+                id: userId,
                 fullname,
                 username: member.username,
                 initials,
                 status: "active",
+              })
+            })
+          }
+        } catch {
+          // ignore error fetching workspace members
+        }
+
+        // 2. Load members from each project in this workspace to get all members
+        if (projectList.length > 0) {
+          await Promise.all(
+            projectList.map(async (project) => {
+              try {
+                const pMembers = await listProjectMembers(project.id)
+                if (Array.isArray(pMembers)) {
+                  pMembers.forEach((member: ProjectMember) => {
+                    const userId = member.user_id ?? member.id
+                    if (userId === undefined || userId === null || memberMap.has(String(userId))) return
+                    const fullname = (member as any).fullname || (member as any).username || "Member"
+                    const initials =
+                      fullname
+                        .split(/\s+/)
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .map((part: string) => part.charAt(0).toUpperCase())
+                        .join("") || "M"
+
+                    memberMap.set(String(userId), {
+                      id: userId,
+                      fullname,
+                      username: (member as any).username,
+                      initials,
+                      status: "active",
+                    })
+                  })
+                }
+              } catch {
+                // ignore single project member fetch error
               }
             })
-            : []
+          )
+        }
 
-          setMembers(nextMembers)
+        // 3. Load all registered users as well
+        try {
+          const allUsers = await searchUsers("")
+          if (Array.isArray(allUsers)) {
+            allUsers.forEach((u) => {
+              if (memberMap.has(String(u.id))) return
+              const fullname = u.fullname || u.username || "User"
+              const initials =
+                fullname
+                  .split(/\s+/)
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((part) => part.charAt(0).toUpperCase())
+                  .join("") || "U"
+
+              memberMap.set(String(u.id), {
+                id: u.id,
+                fullname,
+                username: u.username,
+                initials,
+                status: "active",
+              })
+            })
+          }
+        } catch {
+          // ignore error fetching system users
+        }
+
+        if (!cancelled) {
+          setMembers(Array.from(memberMap.values()))
         }
       } catch {
         if (!cancelled) {
+          setProjects([])
           setMembers([])
         }
       } finally {
         if (!cancelled) {
+          setIsLoadingProjects(false)
           setIsLoadingMembers(false)
         }
       }
     }
 
-    loadProjects()
-    loadMembers()
+    loadData()
 
     return () => {
       cancelled = true
@@ -119,6 +185,25 @@ export default function WorkspacePage() {
   }, [workspaceId])
 
   const emptyProjects = !isLoadingProjects && projects.length === 0
+
+  async function handleCreateProject(payload: CreateProjectPayload) {
+    if (!workspaceId) return
+    setIsCreating(true)
+    try {
+      await createProject(workspaceId, {
+        name: payload.name,
+        description: payload.description,
+      })
+      setShowCreateProject(false)
+      // Refresh project list
+      const updated = await listProjectsByLead(workspaceId)
+      setProjects(Array.isArray(updated) ? updated : [])
+    } catch {
+      // keep modal open so user can retry
+    } finally {
+      setIsCreating(false)
+    }
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -135,6 +220,7 @@ export default function WorkspacePage() {
           onSearchChange={() => undefined}
           onStatusChange={() => undefined}
           onManageMembers={() => undefined}
+          onShowAllMembers={() => setShowMembersDialog(true)}
         />
 
         <div>
@@ -161,6 +247,7 @@ export default function WorkspacePage() {
 
               <button
                 type="button"
+                onClick={() => setShowCreateProject(true)}
                 className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-sm border border-[#27272A] bg-[#27272A] px-3 text-sm font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46] hover:bg-[#3F3F46]"
               >
                 <Plus className="h-4 w-4" />
@@ -196,6 +283,42 @@ export default function WorkspacePage() {
           )}
         </div>
       </section>
+
+      {/* ── Create Project Modal Overlay ── */}
+      {showCreateProject && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isCreating) {
+              setShowCreateProject(false)
+            }
+          }}
+        >
+          <div className="w-full max-w-xl">
+            <CreateProjectCard
+              isSubmitting={isCreating}
+              onCancel={() => {
+                if (!isCreating) setShowCreateProject(false)
+              }}
+              onSubmit={handleCreateProject}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── All Members Dialog ── */}
+      {showMembersDialog && (
+        <WorkspaceMembersDialog
+          members={members.map((m) => ({
+            id: m.id,
+            fullname: m.fullname,
+            username: m.username ?? "",
+            initials: m.initials,
+            status: m.status ?? "active",
+          }))}
+          onClose={() => setShowMembersDialog(false)}
+        />
+      )}
     </div>
   )
 }
