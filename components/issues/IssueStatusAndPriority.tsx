@@ -10,8 +10,8 @@ import {
 import { ChevronDown } from "lucide-react"
 import type { ReactNode } from "react"
 
-export type IssueStatus = "todo" | "in_progress" | "done"
-export type IssuePriority = "low" | "medium" | "high"
+export type IssueStatus = "TODO" | "IN_PROGRESS" | "DONE"
+export type IssuePriority = "LOW" | "MEDIUM" | "HIGH"
 
 export type IssueStatusAndPriorityProps = {
   status: IssueStatus
@@ -26,32 +26,34 @@ export type IssueStatusAndPriorityProps = {
     name: string
   }
   milestone?: string
+  /** When true the status/priority selects are locked to read-only */
+  disabled?: boolean
   onStatusChange?: (status: IssueStatus) => void
   onPriorityChange?: (priority: IssuePriority) => void
 }
 
 const STATUS_LABELS: Record<IssueStatus, string> = {
-  todo: "Todo",
-  in_progress: "In Progress",
-  done: "Done",
+  TODO: "Todo",
+  IN_PROGRESS: "In Progress",
+  DONE: "Done",
 }
 
 const PRIORITY_LABELS: Record<IssuePriority, string> = {
-  low: "Low",
-  medium: "Medium",
-  high: "High",
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
 }
 
 const STATUS_DOTS: Record<IssueStatus, string> = {
-  todo: "bg-[#71717A]",
-  in_progress: "bg-[#CA8A04]",
-  done: "bg-[#22C55E]",
+  TODO: "bg-[#71717A]",
+  IN_PROGRESS: "bg-[#CA8A04]",
+  DONE: "bg-[#22C55E]",
 }
 
 const PRIORITY_DOTS: Record<IssuePriority, string> = {
-  low: "bg-[#71717A]",
-  medium: "bg-[#CA8A04]",
-  high: "bg-[#EF4444]",
+  LOW: "bg-[#71717A]",
+  MEDIUM: "bg-[#CA8A04]",
+  HIGH: "bg-[#EF4444]",
 }
 
 function FieldRow<T extends string>({
@@ -60,19 +62,32 @@ function FieldRow<T extends string>({
   labels,
   dots,
   onChange,
+  disabled,
 }: {
   label: string
   value: T
   labels: Record<T, string>
   dots: Record<T, string>
   onChange?: (value: T) => void
+  disabled?: boolean
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-xs font-medium text-[#94A3B8]">{label}</span>
 
-      <Select value={value} onValueChange={(v) => onChange?.(v as T)}>
-        <SelectTrigger className="h-8 w-auto min-w-33 gap-2 border-[#27272A] bg-[#18181B] text-xs font-medium text-[#E2E8F0] hover:border-[#3F3F46] focus:ring-[#5E6AD2]/40">
+      <Select
+        value={value}
+        onValueChange={(v) => !disabled && onChange?.(v as T)}
+        disabled={disabled}
+      >
+        <SelectTrigger
+          className={[
+            "h-8 w-auto min-w-33 gap-2 border-[#27272A] bg-[#18181B] text-xs font-medium text-[#E2E8F0] focus:ring-[#5E6AD2]/40",
+            disabled
+              ? "cursor-not-allowed opacity-50"
+              : "hover:border-[#3F3F46]",
+          ].join(" ")}
+        >
           <span className="flex items-center gap-2">
             <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${dots[value]}`} />
             <SelectValue />
@@ -119,6 +134,7 @@ export default function IssueStatusAndPriority({
   assignee = { initials: "U", name: "Unassigned" },
   project = { initials: "P", name: "Project" },
   milestone = "No milestone",
+  disabled = false,
   onStatusChange,
   onPriorityChange,
 }: IssueStatusAndPriorityProps) {
@@ -135,6 +151,7 @@ export default function IssueStatusAndPriority({
           labels={STATUS_LABELS}
           dots={STATUS_DOTS}
           onChange={onStatusChange}
+          disabled={disabled}
         />
 
         <FieldRow
@@ -143,6 +160,7 @@ export default function IssueStatusAndPriority({
           labels={PRIORITY_LABELS}
           dots={PRIORITY_DOTS}
           onChange={onPriorityChange}
+          disabled={disabled}
         />
 
         <StaticRow label="Assignee">

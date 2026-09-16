@@ -8,8 +8,12 @@ import ProjectIssues, {
 import ProjectMembers, {
   type ProjectMemberItem,
 } from "@/components/projects/ProjectMembers"
+import CreateIssueCard, {
+  type CreateIssueMember,
+  type CreateIssuePayload,
+} from "@/components/issues/CreateIssueCard"
 import { getProjectById, type Project } from "@/services/projects.service"
-import { listProjectIssues, type Issue } from "@/services/issues.service"
+import { listProjectIssues, createIssue, type Issue } from "@/services/issues.service"
 import {
   listProjectMembers,
   type ProjectMember,
@@ -30,7 +34,10 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
   const [members, setMembers] = useState<ProjectMemberItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const router = useRouter();
+  // ── Create issue ──────────────────────────────────────────────────────────
+  const [showCreateIssue, setShowCreateIssue] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+  const router = useRouter()
 
   // Resolve params from Promise
   useEffect(() => {
@@ -116,11 +123,17 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
               .map((part: string) => part.charAt(0).toUpperCase())
               .join("") || "M"
 
+            const memberId = member.user_id ?? member.id
+            const isLead =
+              memberId !== undefined &&
+              projectData.lead_id !== undefined &&
+              String(memberId) === String(projectData.lead_id)
+
             return {
               id: member.id,
               fullname,
               username: (member as any).username || "",
-              role: "Member",
+              role: isLead ? "Lead" : "Member",
               initials,
             }
           })
@@ -148,6 +161,45 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
       cancelled = true
     }
   }, [projectID])
+
+  // ── Derived: members shaped for CreateIssueCard ───────────────────────────
+  const cardMembers: CreateIssueMember[] = members.map((m) => ({
+    id: (m as any).user_id ?? m.id ?? "",
+    name: m.fullname,
+  }))
+
+  // ── Create issue handler ──────────────────────────────────────────────────
+  async function handleCreateIssue(payload: CreateIssuePayload) {
+    if (!projectID) return
+    setIsCreating(true)
+    try {
+      const created = await createIssue(projectID, {
+        title: payload.title,
+        description: payload.description,
+        status: payload.status,
+        priority: payload.priority,
+        ...(payload.assigned_to !== undefined && {
+          assigned_to: Number(payload.assigned_to),
+        }),
+      })
+
+      // Append the new issue to the list without a full refetch
+      const newItem: ProjectIssueItem = {
+        id: created.id,
+        title: created.title,
+        description: created.description,
+        status: "todo",
+        priority: created.priority?.toLowerCase() as ProjectIssueItem["priority"],
+        createdAt: created.created_at,
+      }
+      setIssues((prev) => [newItem, ...prev])
+      setShowCreateIssue(false)
+    } catch {
+      // silently swallow for now — a toast system can be added later
+    } finally {
+      setIsCreating(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -291,17 +343,27 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
         )}
 
         {activeTab === "Issues" && (
-          <ProjectIssues
-            projectName={project.name}
-            issues={issues}
-            onCreateIssue={() => console.log("Create issue")}
-            onSearchChange={() => console.log("Search")}
-            onFilterChange={() => console.log("Filter")}
-            onSortChange={() => console.log("Sort")}
-            onClick={(issueId: any) =>
-              router.push(`/projects/${projectID}/issues/${issueId}`)
-            }
-          />
+          <div className="space-y-4">
+            {showCreateIssue && (
+              <CreateIssueCard
+                members={cardMembers}
+                isSubmitting={isCreating}
+                onSubmit={handleCreateIssue}
+                onCancel={() => setShowCreateIssue(false)}
+              />
+            )}
+            <ProjectIssues
+              projectName={project.name}
+              issues={issues}
+              onCreateIssue={() => setShowCreateIssue(true)}
+              onSearchChange={() => console.log("Search")}
+              onFilterChange={() => console.log("Filter")}
+              onSortChange={() => console.log("Sort")}
+              onClick={(issueId: any) =>
+                router.push(`/projects/${projectID}/issues/${issueId}`)
+              }
+            />
+          </div>
         )}
 
         {activeTab === "Members" && <ProjectMembers members={members} />}

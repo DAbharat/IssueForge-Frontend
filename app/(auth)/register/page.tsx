@@ -25,10 +25,10 @@ export default function RegisterPage() {
     event.preventDefault()
     setErrorMessage("")
 
-    if (!acceptedTerms) {
-      setErrorMessage("You must agree to the Terms & Conditions to continue.")
-      return
-    }
+    // if (!acceptedTerms) {
+    //   setErrorMessage("You must agree to the Terms & Conditions to continue.")
+    //   return
+    // }
 
     if (!firstName.trim() || !lastName.trim()) {
       setErrorMessage("Please enter both first and last name.")

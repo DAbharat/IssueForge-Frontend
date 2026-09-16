@@ -4,9 +4,12 @@ import { AxiosError } from "axios";
 export type IssueActivity = {
     id: string;
     issue_id: string;
-    user_id?: string;
-    action: string;
-    details?: string;
+    actor_id?: string;
+    actor_name?: string;
+    activity_type: string;
+    field_name?: string;
+    old_value?: string;
+    new_value?: string;
     created_at?: string;
 };
 

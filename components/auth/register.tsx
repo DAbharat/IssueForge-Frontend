@@ -43,7 +43,7 @@ export default function RegisterView({
     onSubmit,
 }: RegisterViewProps) {
     return (
-        <main className="flex min-h-screen items-center justify-center bg-[#0F1115] px-4 py-6 text-[#E2E8F0] sm:px-6 lg:px-8">
+        <main className="flex min-h-screen items-center justify-center bg-[#000000] px-4 py-6 text-[#E2E8F0] sm:px-6 lg:px-8">
             <div className="grid w-full max-w-7xl items-start gap-2 lg:grid-cols-[1fr_1fr]">
                 <section
                     className="relative hidden h-175 overflow-hidden rounded-lg border border-[#222631] bg-[url('/images/register-hero.jpg')] bg-cover bg-center shadow-2xl lg:block"

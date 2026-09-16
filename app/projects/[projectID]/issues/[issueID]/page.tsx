@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import CommentBox from "@/components/comments/CommentBox"
+import CommentCard from "@/components/comments/CommentCard"
 import IssueActivity, {
     type IssueActivityItem,
 } from "@/components/issues/IssueActivity"
@@ -14,13 +16,11 @@ import IssueStatusAndPriority, {
     type IssueStatus,
 } from "@/components/issues/IssueStatusAndPriority"
 import IssueTabs, { type IssueTabKey } from "@/components/issues/IssueTabs"
-import {
-    getIssueById,
-    updateIssuePriority,
-    updateIssueStatus,
-} from "@/services/issues.service"
+import { getIssueById, updateIssuePriority, updateIssueStatus } from "@/services/issues.service"
 import { listIssueActivities } from "@/services/activities.service"
 import { getProjectById } from "@/services/projects.service"
+import { me } from "@/services/account.service"
+import { useComments } from "@/hooks/use-comments"
 
 function formatDate(dateString?: string) {
     if (!dateString) return "—"
@@ -35,19 +35,19 @@ function formatDate(dateString?: string) {
 }
 
 function normalizeStatus(value?: string): IssueStatus {
-    const status = value?.toLowerCase()
+    const status = value?.toUpperCase()
 
-    if (status === "done") return "done"
-    if (status === "in_progress" || status === "in progress") return "in_progress"
-    return "todo"
+    if (status === "DONE") return "DONE"
+    if (status === "IN_PROGRESS") return "IN_PROGRESS"
+    return "TODO"
 }
 
 function normalizePriority(value?: string): IssuePriority {
-    const priority = value?.toLowerCase()
+    const priority = value?.toUpperCase()
 
-    if (priority === "high") return "high"
-    if (priority === "medium") return "medium"
-    return "low"
+    if (priority === "HIGH") return "HIGH"
+    if (priority === "MEDIUM") return "MEDIUM"
+    return "LOW"
 }
 
 function mapActivityType(action?: string): IssueActivityTabItem["type"] {
@@ -68,8 +68,8 @@ export default function IssuePage({
     const [issueID, setIssueID] = useState<string | null>(null)
     const [issueTitle, setIssueTitle] = useState("")
     const [issueDescription, setIssueDescription] = useState("")
-    const [status, setStatus] = useState<IssueStatus>("todo")
-    const [priority, setPriority] = useState<IssuePriority>("low")
+    const [status, setStatus] = useState<IssueStatus>("TODO")
+    const [priority, setPriority] = useState<IssuePriority>("LOW")
     const [assigneeLabel, setAssigneeLabel] = useState("Unassigned")
     const [assigneeEmail, setAssigneeEmail] = useState<string | undefined>()
     const [projectName, setProjectName] = useState("Project")
@@ -79,6 +79,16 @@ export default function IssuePage({
     const [activeTab, setActiveTab] = useState<IssueTabKey>("Details")
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+
+    // ── Permission state ───────────────────────────────────────────────────────
+    const [currentUserId, setCurrentUserId] = useState<string | number | null>(null)
+    const [issueAssigneeId, setIssueAssigneeId] = useState<string | number | null>(null)
+    const [issueCreatedBy, setIssueCreatedBy] = useState<string | number | null>(null)
+    const [projectLeadId, setProjectLeadId] = useState<string | number | null>(null)
+
+    // ── Comments ──────────────────────────────────────────────────────────────
+    const { comments, isSubmitting, submitComment } = useComments(issueID)
+    const [commentText, setCommentText] = useState("")
 
     useEffect(() => {
         params.then((p) => {
@@ -101,10 +111,11 @@ export default function IssuePage({
                 const resolvedIssueId = issueID
                 if (!resolvedIssueId) return
 
-                const [issue, issueActivities, project] = await Promise.all([
+                const [issue, issueActivities, project, currentUser] = await Promise.all([
                     getIssueById(resolvedIssueId),
                     listIssueActivities(resolvedIssueId),
                     getProjectById(resolvedProjectID),
+                    me(),
                 ])
 
                 if (cancelled) return
@@ -121,13 +132,21 @@ export default function IssuePage({
                 setCreatedAt(issue.created_at)
                 setUpdatedAt(issue.updated_at)
 
+                // ── Permission data ────────────────────────────────────────
+                setCurrentUserId(currentUser?.id ?? null)
+                setIssueAssigneeId(issue.assigned_to ?? null)
+                setIssueCreatedBy(issue.created_by ?? issue.creator_id ?? null)
+                setProjectLeadId(project.lead_id ?? null)
+
                 setActivity(
                     issueActivities.map((item) => ({
                         id: item.id,
-                        actor: item.user_id ? `User #${item.user_id}` : "System",
-                        action: item.action,
-                        details: item.details,
-                        type: mapActivityType(item.action),
+                        actor: item.actor_name ?? (item.actor_id ? `User #${item.actor_id}` : "System"),
+                        action: item.activity_type,
+                        details: item.field_name
+                            ? `${item.field_name}: ${item.old_value ?? "—"} → ${item.new_value ?? "—"}`
+                            : undefined,
+                        type: mapActivityType(item.activity_type),
                         timestamp: formatDate(item.created_at),
                     }))
                 )
@@ -154,7 +173,7 @@ export default function IssuePage({
             activity.map((item) => ({
                 id: item.id,
                 actor: item.actor,
-                message: item.details ? `${item.action} ${item.details}` : item.action,
+                message: item.details ? `${item.action} — ${item.details}` : item.action,
                 timestamp: item.timestamp,
             })),
         [activity]
@@ -193,8 +212,41 @@ export default function IssuePage({
 
         if (activeTab === "Comments") {
             return (
-                <div className="rounded-xl border border-[#27272A] bg-[#101012] p-4 text-xs text-[#71717A]">
-                    No comments yet.
+                <div className="flex flex-col gap-6">
+                    {/* ── Comment box ── */}
+                    <CommentBox
+                        value={commentText}
+                        onChange={setCommentText}
+                        onImageSelect={() => {
+                            // Image attachment is a future enhancement;
+                            // the API contract doesn't include image upload for comments yet.
+                        }}
+                        onSubmit={async () => {
+                            const ok = await submitComment(commentText)
+                            if (ok) setCommentText("")
+                        }}
+                        isSubmitting={isSubmitting}
+                    />
+
+                    {/* ── Comment list ── */}
+                    {comments.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-white/10 py-8 text-center text-xs text-[#94A3B8]">
+                            No comments yet. Be the first to comment.
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-3">
+                            {comments.map((comment) => (
+                                <CommentCard
+                                    key={comment.id}
+                                    authorName={comment.authorName}
+                                    authorUsername={comment.authorUsername}
+                                    authorInitials={comment.authorInitials}
+                                    content={comment.content}
+                                    relativeTime={comment.relativeTime}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
             )
         }
@@ -268,30 +320,30 @@ export default function IssuePage({
                                 <div className="flex flex-wrap items-center gap-2.5">
                                     <span className="inline-flex h-7 items-center gap-2 rounded-md border border-[#27272A] bg-[#101012] px-3 text-[11px] font-medium text-[#D4D4D8]">
                                         <span
-                                            className={`h-1.5 w-1.5 shrink-0 rounded-full ${status === "in_progress"
+                                            className={`h-1.5 w-1.5 shrink-0 rounded-full ${status === "IN_PROGRESS"
                                                 ? "bg-[#CA8A04]"
-                                                : status === "done"
+                                                : status === "DONE"
                                                     ? "bg-[#22C55E]"
                                                     : "bg-[#71717A]"
                                                 }`}
                                         />
-                                        {status === "in_progress"
+                                        {status === "IN_PROGRESS"
                                             ? "In Progress"
-                                            : status === "done"
+                                            : status === "DONE"
                                                 ? "Done"
                                                 : "Todo"}
                                     </span>
 
                                     <span className="inline-flex h-7 items-center gap-2 rounded-md border border-[#27272A] bg-[#101012] px-3 text-[11px] font-medium text-[#D4D4D8]">
                                         <span
-                                            className={`h-1.5 w-1.5 shrink-0 rounded-full ${priority === "high"
+                                            className={`h-1.5 w-1.5 shrink-0 rounded-full ${priority === "HIGH"
                                                 ? "bg-[#EF4444]"
-                                                : priority === "medium"
+                                                : priority === "MEDIUM"
                                                     ? "bg-[#CA8A04]"
                                                     : "bg-[#71717A]"
                                                 }`}
                                         />
-                                        {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                                        {priority.charAt(0).toUpperCase() + priority.slice(1).toLowerCase()}
                                     </span>
                                 </div>
 
@@ -420,6 +472,14 @@ export default function IssuePage({
                                 initials: projectName.slice(0, 2).toUpperCase(),
                                 name: projectName,
                             }}
+                            disabled={
+                                currentUserId === null ||
+                                (
+                                    String(currentUserId) !== String(issueAssigneeId) &&
+                                    String(currentUserId) !== String(issueCreatedBy) &&
+                                    String(currentUserId) !== String(projectLeadId)
+                                )
+                            }
                             onStatusChange={handleStatusChange}
                             onPriorityChange={handlePriorityChange}
                         />

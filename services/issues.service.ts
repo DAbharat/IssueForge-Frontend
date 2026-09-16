@@ -10,7 +10,8 @@ export type Issue = {
     assigned_to?: string | number;
     assignee_name?: string;
     assignee_id?: string;
-    creator_id?: string;
+    created_by?: string | number;
+    creator_id?: string | number;
     project_id?: string;
     due_date?: string;
     created_at?: string;
@@ -19,11 +20,10 @@ export type Issue = {
 
 export type CreateIssueRequest = {
     title: string;
-    description?: string;
-    status?: string;
-    priority?: string;
-    assignee_id?: string;
-    due_date?: string;
+    description: string;
+    status: string;
+    priority: string;
+    assigned_to?: number;
 };
 
 export type UpdateIssueRequest = {
