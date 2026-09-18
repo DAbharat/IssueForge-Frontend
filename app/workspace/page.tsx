@@ -1,11 +1,12 @@
 "use client"
 
-import { Search, SlidersHorizontal, Plus } from "lucide-react"
+import { Pencil, Search, SlidersHorizontal, Plus } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 
 import ProjectCard from "@/components/projects/ProjectCard"
 import CreateProjectCard, { type CreateProjectPayload } from "@/components/projects/CreateProjectCard"
+import EditWorkspaceNameModal from "@/components/workspace/EditWorkspaceNameModal"
 import WorkspaceMembersOverview, {
   type WorkspaceMemberOverviewItem,
 } from "@/components/workspace-members/WorkspaceMembersOverview"
@@ -14,7 +15,8 @@ import { useProfile } from "@/hooks/use-profile"
 import { createProject, listProjectsByLead, type Project } from "@/services/projects.service"
 import { listProjectMembers, type ProjectMember } from "@/services/projectMembers.service"
 import { searchUsers } from "@/services/account.service"
-import { listWorkspaceMembers, type WorkspaceMember } from "@/services/workspaceMembers.service"
+import { listWorkspaceMembers, removeWorkspaceMember, promoteWorkspaceMember, type WorkspaceMember } from "@/services/workspaceMembers.service"
+import { updateWorkspaceName } from "@/services/workspaces.service"
 
 export default function WorkspacePage() {
   const searchParams = useSearchParams()
@@ -28,6 +30,9 @@ export default function WorkspacePage() {
   const [showCreateProject, setShowCreateProject] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [showMembersDialog, setShowMembersDialog] = useState(false)
+  const [showEditName, setShowEditName] = useState(false)
+  const [isSavingName, setIsSavingName] = useState(false)
+  const [editNameError, setEditNameError] = useState<string | null>(null)
   const router = useRouter();
 
   useEffect(() => {
@@ -90,6 +95,7 @@ export default function WorkspacePage() {
                 fullname,
                 username: member.username,
                 initials,
+                role: member.role,
                 status: "active",
               })
             })
@@ -98,68 +104,7 @@ export default function WorkspacePage() {
           // ignore error fetching workspace members
         }
 
-        // 2. Load members from each project in this workspace to get all members
-        if (projectList.length > 0) {
-          await Promise.all(
-            projectList.map(async (project) => {
-              try {
-                const pMembers = await listProjectMembers(project.id)
-                if (Array.isArray(pMembers)) {
-                  pMembers.forEach((member: ProjectMember) => {
-                    const userId = member.user_id ?? member.id
-                    if (userId === undefined || userId === null || memberMap.has(String(userId))) return
-                    const fullname = (member as any).fullname || (member as any).username || "Member"
-                    const initials =
-                      fullname
-                        .split(/\s+/)
-                        .filter(Boolean)
-                        .slice(0, 2)
-                        .map((part: string) => part.charAt(0).toUpperCase())
-                        .join("") || "M"
 
-                    memberMap.set(String(userId), {
-                      id: userId,
-                      fullname,
-                      username: (member as any).username,
-                      initials,
-                      status: "active",
-                    })
-                  })
-                }
-              } catch {
-                // ignore single project member fetch error
-              }
-            })
-          )
-        }
-
-        // 3. Load all registered users as well
-        try {
-          const allUsers = await searchUsers("")
-          if (Array.isArray(allUsers)) {
-            allUsers.forEach((u) => {
-              if (memberMap.has(String(u.id))) return
-              const fullname = u.fullname || u.username || "User"
-              const initials =
-                fullname
-                  .split(/\s+/)
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .map((part) => part.charAt(0).toUpperCase())
-                  .join("") || "U"
-
-              memberMap.set(String(u.id), {
-                id: u.id,
-                fullname,
-                username: u.username,
-                initials,
-                status: "active",
-              })
-            })
-          }
-        } catch {
-          // ignore error fetching system users
-        }
 
         if (!cancelled) {
           setMembers(Array.from(memberMap.values()))
@@ -205,11 +150,45 @@ export default function WorkspacePage() {
     }
   }
 
+  async function handleRenameWorkspace(newName: string) {
+    if (!workspaceId) return
+    setIsSavingName(true)
+    setEditNameError(null)
+    try {
+      await updateWorkspaceName(workspaceId, { name: newName })
+      setWorkspaceName(newName)
+      setShowEditName(false)
+    } catch (err) {
+      setEditNameError(
+        err instanceof Error ? err.message : "Failed to rename workspace"
+      )
+    } finally {
+      setIsSavingName(false)
+    }
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight text-[#E2E8F0] sm:text-4xl">{workspaceName}</h1>
-        <p className="mt-2 text-base text-[#94A3B8]">Workspace overview</p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-[#E2E8F0] sm:text-4xl">{workspaceName}</h1>
+          <p className="mt-2 text-base text-[#94A3B8]">Workspace overview</p>
+        </div>
+
+        {/* Edit workspace name button */}
+        <button
+          id="edit-workspace-name-btn"
+          type="button"
+          aria-label="Edit workspace name"
+          onClick={() => {
+            setEditNameError(null)
+            setShowEditName(true)
+          }}
+          className="mt-1 inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[#27272A] bg-transparent px-4 py-2 text-xs font-bold text-[#DDE1E5] transition-colors hover:border-[#3F3F46] hover:text-[#A1A1AA] focus:outline-none"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          Edit
+        </button>
       </div>
 
       <section className="space-y-8">
@@ -314,9 +293,66 @@ export default function WorkspacePage() {
             fullname: m.fullname,
             username: m.username ?? "",
             initials: m.initials,
+            role: m.role,
             status: m.status ?? "active",
           }))}
           onClose={() => setShowMembersDialog(false)}
+          isAdmin={(() => {
+            const ws = profile?.workspaces?.find((w) => String(w.id) === String(workspaceId))
+            const role = ws?.role?.toLowerCase() ?? ""
+            return role === "admin" || role === "owner"
+          })()}
+          currentUserId={profile?.id}
+          onPromote={async (member) => {
+            if (!workspaceId) return
+            const uid = member.user_id ?? member.id
+            if (uid === undefined || uid === null) return
+            await promoteWorkspaceMember(workspaceId, uid)
+          }}
+          onRemove={async (member) => {
+            if (!workspaceId) return
+            const uid = member.user_id ?? member.id
+            if (uid === undefined || uid === null) return
+            await removeWorkspaceMember(workspaceId, uid)
+            // Refresh member list
+            try {
+              const wsMembers = await listWorkspaceMembers(workspaceId)
+              if (Array.isArray(wsMembers)) {
+                setMembers(
+                  wsMembers.map((m: WorkspaceMember) => {
+                    const fullname = m.fullname || m.username || "Member"
+                    const initials =
+                      fullname
+                        .split(/\s+/)
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .map((p) => p.charAt(0).toUpperCase())
+                        .join("") || "M"
+                    return { id: m.user_id ?? m.id, fullname, username: m.username, initials, status: "active" as const }
+                  })
+                )
+              }
+            } catch {
+              // ignore refresh error
+            }
+          }}
+        />
+      )}
+
+      {/* ── Edit Workspace Name Modal ── */}
+      {showEditName && (
+        <EditWorkspaceNameModal
+          currentName={workspaceName}
+          isSaving={isSavingName}
+          error={editNameError}
+          onSave={handleRenameWorkspace}
+          onClose={() => {
+            if (!isSavingName) setShowEditName(false)
+          }}
+          onManageMembers={() => {
+            setShowEditName(false)
+            setShowMembersDialog(true)
+          }}
         />
       )}
     </div>

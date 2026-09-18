@@ -4,9 +4,14 @@ import { Bell, ChevronLeft, Search, User2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
+import WorkspaceSwitcher, {
+    type WorkspaceSwitcherItem,
+} from "@/components/layout/WorkspaceSwitcher"
 
 type NavbarProps = {
     workspaceName?: string
+    workspaces?: WorkspaceSwitcherItem[]
+    onWorkspaceSwitch?: (workspace: WorkspaceSwitcherItem) => void
     userName?: string
     isMobile?: boolean
     onMobileSidebarToggle?: () => void
@@ -14,6 +19,8 @@ type NavbarProps = {
 
 export default function Navbar({
     workspaceName,
+    workspaces = [],
+    onWorkspaceSwitch,
     userName = "User",
     isMobile = false,
     onMobileSidebarToggle,
@@ -23,7 +30,7 @@ export default function Navbar({
     return (
         <header className="border-b border-[#27272A] bg-[#000000] px-3 py-3 text-[#E2E8F0] shadow-[0_1px_0_rgba(255,255,255,0.02)] md:px-4">
             <div className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-2 md:gap-3">
-                {/* Left: toggle + brand + workspace */}
+                {/* Left: toggle + brand + workspace switcher */}
                 <div className="flex min-w-0 items-center gap-2">
                     {isMobile && (
                         <button
@@ -40,17 +47,29 @@ export default function Navbar({
                         IssueForge
                     </div>
 
-                    {workspaceName ? (
-                        <div className="hidden min-w-0 items-center gap-2 md:flex">
-                            <span className="shrink-0 text-[#94A3B8]">/</span>
-                            <span className="truncate text-sm text-[#94A3B8]">{workspaceName}</span>
-                        </div>
+                    {workspaceName && (
+                        <span className="hidden shrink-0 text-[#3F3F46] md:block">/</span>
+                    )}
+
+                    {/* Workspace switcher — shown when name is available */}
+                    {workspaceName && onWorkspaceSwitch ? (
+                        <WorkspaceSwitcher
+                            currentWorkspaceName={workspaceName}
+                            workspaces={workspaces}
+                            onSwitch={onWorkspaceSwitch}
+                        />
+                    ) : workspaceName ? (
+                        /* Fallback: plain text when no switch handler is provided */
+                        <span className="hidden truncate text-sm text-[#94A3B8] md:block">
+                            {workspaceName}
+                        </span>
                     ) : (
-                        <div className="hidden h-4 w-24 shrink-0 rounded-sm border border-dashed border-[#27272A] bg-[#18181B] md:block" />
+                        /* Skeleton placeholder while workspace loads */
+                        <div className="hidden h-4 w-24 shrink-0 animate-pulse rounded-sm border border-dashed border-[#27272A] bg-[#18181B] md:block" />
                     )}
                 </div>
 
-                {/* Center: search, fills remaining space and centers within it */}
+                {/* Center: search */}
                 <div className="flex min-w-0 justify-center px-1">
                     <Button
                         type="button"

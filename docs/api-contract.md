@@ -719,6 +719,11 @@ Auth required: Yes
 
 Response (200 OK): backend response depending implementation
 
+### 52) PATCH /api/workspaces/{workspaceID}/members/promote
+Auth required: Yes(Admins only)
+
+Response (200 OK): workspace_id, user_id, user_role(new role)
+
 ---
 
 ## Workspace invitation endpoints

@@ -7,6 +7,7 @@ export type WorkspaceMemberOverviewItem = {
   fullname: string
   username?: string
   initials: string
+  role?: string
   status?: "active" | "pending"
   isRecent?: boolean
 }

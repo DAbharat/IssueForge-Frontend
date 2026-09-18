@@ -5,13 +5,12 @@ import { useEffect, useState } from "react"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import Navbar from "@/components/layout/Navbar"
-import { useProfile } from "@/hooks/use-profile"
+import { useWorkspaceSwitcher } from "@/hooks/use-workspace-switcher"
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { profile } = useProfile()
+  const { activeWorkspace, workspaces, switchWorkspace, profile } = useWorkspaceSwitcher()
   const [userName, setUserName] = useState("User")
-  const [workspaceName, setWorkspaceName] = useState<string | undefined>()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
@@ -25,24 +24,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           setUserName(parsedUser.fullname)
         }
       }
-
-      const storedWorkspace = window.localStorage.getItem("workspaceName")
-      if (storedWorkspace) {
-        setWorkspaceName(storedWorkspace)
-      }
     } catch {
       // ignore localStorage parsing errors and keep the default values
     }
   }, [])
-
-  useEffect(() => {
-    if (profile?.workspaces && profile.workspaces.length > 0) {
-      const firstWorkspaceName = profile.workspaces[0]?.name
-      if (firstWorkspaceName) {
-        setWorkspaceName(firstWorkspaceName)
-      }
-    }
-  }, [profile])
 
   useEffect(() => {
     const updateViewport = () => {
@@ -98,7 +83,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex min-h-screen flex-1 flex-col bg-[#000000]">
         <Navbar
-          workspaceName={workspaceName}
+          workspaceName={activeWorkspace?.name}
+          workspaces={workspaces}
+          onWorkspaceSwitch={switchWorkspace}
           userName={userName}
           isMobile={isMobile}
           onMobileSidebarToggle={() => setMobileSidebarOpen((prev) => !prev)}

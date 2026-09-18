@@ -164,7 +164,7 @@ export function AppSidebar({
       {renderOverviewItem()}
       {renderProjectsSection()}
       {renderWorkspacesSection()}
-          <div className="my-2 border-t border-[#27272A]" />
+      <div className="my-2 border-t border-[#27272A]" />
       {renderSettingsItem()}
     </nav>
   )

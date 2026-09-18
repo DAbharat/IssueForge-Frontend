@@ -65,3 +65,14 @@ export async function removeWorkspaceMember(workspaceId: string | number, userId
         throw new Error(getErrorMessage(error, "An error occurred while removing the workspace member."));
     }
 }
+
+export async function promoteWorkspaceMember(workspaceId: string | number, userId: string | number) {
+    try {
+        const response = await axiosClient.patch<WorkspaceMember>(`/api/workspaces/${workspaceId}/member/promote`, {
+            user_id: Number(userId),
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "An error occurred while promoting the workspace member."));
+    }
+}
