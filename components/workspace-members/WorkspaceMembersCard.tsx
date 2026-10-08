@@ -26,91 +26,104 @@ export default function WorkspaceMembersCard({
   onManageClick,
 }: WorkspaceMembersCardProps) {
   return (
-    <div className="h-full flex flex-col w-full rounded-xl border border-[#27272A] bg-[#0E0E11] text-[#E2E8F0] shadow-xl overflow-hidden">
-      {/* Header with single separator */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-[#27272A]">
-        <h2 className="text-base font-bold tracking-tight text-white">
+    <div className="flex h-full w-full flex-col overflow-hidden rounded-md border border-[#27272A] bg-[#0E0E11] text-[#E2E8F0]">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-[#27272A] px-4 py-3.5">
+        <h2 className="text-sm font-semibold text-[#E2E8F0]">
           Workspace Members
         </h2>
         {totalMembers !== undefined && (
-          <span className="text-[13px] font-medium text-[#94A3B8]">
-            {totalMembers} members
-          </span>
+          <span className="text-xs text-[#71717A]">{totalMembers} members</span>
         )}
       </div>
 
-      {/* Member List (no dividers between rows) */}
-      <div className="flex flex-col py-3">
-        {members.map((member) => (
-          <div
-            key={member.id}
-            className="flex items-center justify-between px-5 py-3 hover:bg-white/[0.02] transition-colors gap-3"
-          >
-            {/* Left side: Avatar + User details */}
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E2E8F0] text-[13px] font-bold text-black">
-                {member.initials}
-              </div>
-              <div className="flex flex-col min-w-0 justify-center">
-                <div className="flex items-baseline gap-1.5 min-w-0">
-                  <span className="text-sm font-bold text-white truncate">
-                    {member.fullname}
-                  </span>
-                  {member.isCurrentUser && (
-                    <span className="text-[13px] font-medium text-[#71717A] shrink-0">(you)</span>
-                  )}
-                </div>
-                <span className="text-[13px] font-medium text-[#71717A] truncate">
-                  {member.username ? (member.username.startsWith('@') ? member.username : `@${member.username}`) : ""}
-                </span>
-              </div>
-            </div>
+      {/* Member list */}
+      <ul className="flex flex-col p-2">
+        {members.map((member) => {
+          const isPrivileged =
+            member.role?.toLowerCase() === "admin" ||
+            member.role?.toLowerCase() === "owner"
+          const isActive = member.status?.toLowerCase() === "active"
+          const username = member.username
+            ? member.username.startsWith("@")
+              ? member.username
+              : `@${member.username}`
+            : ""
 
-            {/* Right side: Badges & Actions */}
-            <div className="flex items-center gap-2 shrink-0">
-              {/* Role Badge */}
-              <div
-                className={`flex h-[22px] shrink-0 items-center justify-center rounded-full px-2.5 text-[9px] font-bold uppercase tracking-wider ${
-                  member.role?.toLowerCase() === "admin" || member.role?.toLowerCase() === "owner"
-                    ? "border border-[#3730A3] bg-[#1E1B4B]/80 text-[#818CF8]"
-                    : "border border-[#27272A] bg-transparent text-[#71717A]"
+          return (
+            <li
+              key={member.id}
+              className="grid grid-cols-[minmax(0,1fr)_64px_64px_28px] items-center gap-3 rounded-lg px-2.5 py-2 transition-colors hover:bg-white/[0.03]"
+            >
+              {/* Avatar + name */}
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#27272A] bg-[#18181B] text-[11px] font-medium text-[#A1A1AA]">
+                  {member.initials}
+                </div>
+
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <div className="flex min-w-0 items-baseline gap-1.5">
+                    <span className="truncate text-[13px] font-medium leading-none text-[#E2E8F0]">
+                      {member.fullname}
+                    </span>
+                    {member.isCurrentUser && (
+                      <span className="shrink-0 text-[11px] leading-none text-[#52525B]">
+                        (you)
+                      </span>
+                    )}
+                  </div>
+                  <span className="truncate text-[11px] leading-none text-[#71717A]">
+                    {username}
+                  </span>
+                </div>
+              </div>
+
+              {/* Role — plain text, fixed column */}
+              <span
+                className={`text-[11px] font-medium capitalize ${
+                  isPrivileged ? "text-[#A5B4FC]" : "text-[#71717A]"
                 }`}
               >
-                {member.role || "MEMBER"}
-              </div>
+                {member.role?.toLowerCase() || "member"}
+              </span>
 
-              {/* Status Badge */}
-              {member.status?.toLowerCase() === "active" && (
-                <div className="flex h-[22px] shrink-0 items-center justify-center rounded-full bg-[#064E3B]/80 px-2.5 text-[9px] font-bold capitalize tracking-wide text-[#34D399]">
-                  Active
-                </div>
-              )}
+              {/* Status — dot + label, fixed column */}
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-[#A1A1AA]">
+                {isActive && (
+                  <>
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#22C55E]" />
+                    Active
+                  </>
+                )}
+              </span>
 
-              {/* Actions Icon */}
-              <div className="flex w-5 justify-end shrink-0">
+              {/* Actions — fixed column */}
+              <div className="flex justify-end">
                 {!member.isCurrentUser && (
                   <button
+                    type="button"
                     onClick={() => onActionClick?.(member)}
-                    className="text-[#71717A] hover:text-white transition-colors focus:outline-none"
                     aria-label="More options"
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-[#71717A] transition-colors hover:bg-[#18181B] hover:text-[#E2E8F0] focus:outline-none"
                   >
-                    <MoreHorizontal className="h-[18px] w-[18px]" />
+                    <MoreHorizontal className="h-4 w-4" />
                   </button>
                 )}
               </div>
-            </div>
-          </div>
-        ))}
-      </div>
+            </li>
+          )
+        })}
+      </ul>
 
-      {/* Manage Members Button */}
+      {/* Manage button */}
       {onManageClick && (
-        <div className="mt-auto px-5 pb-5 pt-2">
+        <div className="mt-auto border-t border-[#27272A] p-3">
           <button
+            type="button"
             onClick={onManageClick}
-            className="w-full flex items-center justify-center gap-2 rounded-md border border-[#27272A] bg-transparent py-2 text-[13px] font-medium text-[#818CF8] text-white hover:bg-[#27272A]"
+            className="flex w-full items-center justify-center gap-2 rounded-md border border-[#27272A] bg-[#18181B] py-2 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46]"
           >
-            <UserPlus className="h-[14px] w-[14px]" />
+            <UserPlus className="h-3.5 w-3.5" />
             Manage members
           </button>
         </div>

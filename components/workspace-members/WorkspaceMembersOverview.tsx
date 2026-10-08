@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronDown, Plus, Search } from "lucide-react"
+import { MoreVertical, Search, Check, Plus } from "lucide-react"
 
 export type WorkspaceMemberOverviewItem = {
   id?: string | number
@@ -10,6 +10,9 @@ export type WorkspaceMemberOverviewItem = {
   role?: string
   status?: "active" | "pending"
   isRecent?: boolean
+  email?: string
+  joined_at?: string
+  isCurrentUser?: boolean
 }
 
 export type WorkspaceMembersOverviewProps = {
@@ -24,109 +27,160 @@ export type WorkspaceMembersOverviewProps = {
   onShowAllMembers?: () => void
 }
 
-const MAX_VISIBLE_MEMBERS = 2
+function formatDate(dateStr?: string) {
+  if (!dateStr) return "N/A"
+  try {
+    const d = new Date(dateStr)
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  } catch {
+    return dateStr
+  }
+}
 
 export default function WorkspaceMembersOverview({
-  title = "Members",
+  title = "Workspace Members",
   members = [],
-  activeCount,
-  pendingCount = 0,
   searchPlaceholder = "Search members...",
   onSearchChange,
-  onStatusChange,
   onManageMembers,
-  onShowAllMembers,
 }: WorkspaceMembersOverviewProps) {
-  const visibleMembers = members.slice(0, MAX_VISIBLE_MEMBERS)
-
-  const totalMembersCount = members.length
-  const computedActiveCount =
-    activeCount !== undefined && activeCount > 0
-      ? activeCount
-      : members.filter((m) => m.status !== "pending").length
-
   return (
     <div className="w-full">
-      {/* Header row: Title + Manage Button */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold leading-none tracking-[-0.03em] text-[#E2E8F0]">
-          {title}
-        </h2>
-
-        <button
-          type="button"
-          onClick={onManageMembers}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[#27272A] bg-transparent px-2.5 py-1 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46] hover:bg-white/3"
-        >
-          <span>Manage Workspace Members</span>
-          <Plus className="h-3.5 w-3.5" />
-        </button>
-      </div>
-
-      {/* Control row: Search field + Active/Pending + View All */}
-      <div className="mb-5 flex flex-col gap-2.5 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94A3B8]" />
-          <input
-            type="text"
-            placeholder={searchPlaceholder}
-            onChange={(event) => onSearchChange?.(event.target.value)}
-            className="h-9 w-full rounded-md border border-[#27272A] bg-[#18181B] pl-8 pr-3 text-xs text-[#E2E8F0] placeholder:text-[#94A3B8]/70 focus:border-[#5E6AD2]/60 focus:outline-none"
-          />
+      {/* Header */}
+      <div className="mb-6 mt-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <h2 className="text-xl font-semibold text-[#E2E8F0]">{title}</h2>
+          <p className="mt-1 text-sm text-[#94A3B8]">Manage who has access to this workspace and their roles.</p>
         </div>
-
-        <button
-          type="button"
-          onClick={onStatusChange}
-          className="inline-flex h-9 shrink-0 items-center justify-between gap-1.5 rounded-md border border-[#27272A] bg-[#18181B] px-3 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46]"
-        >
-          <span>Active ({computedActiveCount}) / Pending ({pendingCount})</span>
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[#94A3B8]" />
-        </button>
-
-        <button
-          type="button"
-          onClick={onShowAllMembers}
-          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-[#27272A] bg-transparent px-3 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46] hover:bg-white/3"
-        >
-          <span>View All ({totalMembersCount})</span>
-          <ChevronDown className="h-3.5 w-3.5 text-[#94A3B8]" />
-        </button>
+        
+        <div className="flex w-full items-center gap-3 sm:w-auto">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+            <input
+              type="text"
+              placeholder={searchPlaceholder}
+              onChange={(event) => onSearchChange?.(event.target.value)}
+              className="h-10 w-full rounded-md border border-[#27272A] bg-[#0E0E11] pl-9 pr-4 text-sm text-[#E2E8F0] placeholder:text-[#94A3B8] transition-colors focus:border-[#3F3F46] focus:outline-none"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={onManageMembers}
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-gray-300"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add member</span>
+          </button>
+        </div>
       </div>
 
-      {/* Member list — fixed-width items for consistent grid alignment */}
-      <div className="flex flex-wrap items-start gap-3">
-        {visibleMembers.map((member) => (
-          <div
-            key={member.id ?? member.username ?? member.fullname}
-            className="flex w-16 flex-col items-center gap-1.5"
-          >
-            <div
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#000000] bg-[#DDE1E5] text-xs font-semibold text-[#000000] shadow-[0_0_0_2px_rgba(0,0,0,0.8)]"
-              title={member.fullname}
-            >
-              {member.initials}
-            </div>
-            <span className="w-full truncate text-center text-[10px] leading-tight text-[#94A3B8]">
-              {member.fullname}
-            </span>
-          </div>
-        ))}
+      {/* Table Structure */}
+      <div className="mb-8 overflow-hidden rounded-xl border border-[#27272A] bg-[#0E0E11]">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-[#94A3B8]">
+            <thead className="border-b border-[#27272A] text-xs font-medium">
+              <tr>
+                <th className="px-5 py-4 font-medium">Name</th>
+                <th className="px-5 py-4 font-medium">Email</th>
+                <th className="px-5 py-4 font-medium">Role</th>
+                <th className="px-5 py-4 font-medium">Joined</th>
+                <th className="px-5 py-4 text-right font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#27272A]">
+              {members.map((member) => (
+                <tr key={member.id ?? member.username ?? member.fullname} className="group hover:bg-[#18181B]/50 transition-colors">
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#DDE1E5] text-xs font-medium text-black">
+                        {member.initials}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-[#E2E8F0]">{member.fullname}</span>
+                        {member.isCurrentUser && (
+                          <span className="rounded-full bg-gray-500/50 px-2 py-0.5 text-[10px] font-medium text-white opacity-50">
+                            You
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3">
+                    {member.email || "No email"}
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className={`inline-flex rounded-md px-2 py-1 text-[11px] font-medium ${
+                      member.role?.toLowerCase() === 'owner' ? 'bg-[#6366F1]/10 text-[#818CF8]' :
+                      member.role?.toLowerCase() === 'admin' ? 'bg-green-500/10 text-green-500' :
+                      'bg-[#27272A] text-[#E2E8F0]'
+                    }`}>
+                      {member.role ? member.role.charAt(0).toUpperCase() + member.role.slice(1).toLowerCase() : "Member"}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 text-xs">
+                    {formatDate(member.joined_at)}
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <button className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#94A3B8] transition-colors hover:bg-[#27272A] hover:text-[#E2E8F0]">
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {members.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-5 py-8 text-center">
+                    No members found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-        {/* View All Members Avatar Button */}
-        <button
-          type="button"
-          onClick={onShowAllMembers}
-          className="group flex w-16 flex-col items-center gap-1.5 text-left focus:outline-none"
-          title="View all members"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#000000] bg-[#DDE1E5] text-xs font-semibold text-[#000000] shadow-[0_0_0_2px_rgba(0,0,0,0.8)] blur-[0.8px] transition-all group-hover:blur-none group-hover:scale-105">
-            A
+      {/* Role Permissions Section */}
+      <div className="mb-6 pt-4">
+        <div className="mb-4">
+          <h3 className="text-base font-semibold text-[#E2E8F0]">Role Permissions</h3>
+          <p className="mt-1 text-sm text-[#94A3B8]">Here's what each role can do in this workspace.</p>
+        </div>
+        
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {/* Owner Box */}
+          <div className="rounded-xl border border-[#27272A] bg-[#0E0E11] p-5">
+            <div className="mb-4 inline-flex rounded-md bg-[#6366F1]/10 px-2.5 py-1 text-[11px] font-medium text-[#818CF8]">
+              Owner
+            </div>
+            <ul className="space-y-3 text-sm text-[#E2E8F0]">
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#E2E8F0]" /> Full access to everything</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#E2E8F0]" /> Manage members</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#E2E8F0]" /> Delete workspace</li>
+            </ul>
           </div>
-          <span className="w-full truncate text-center text-[10px] leading-tight text-[#94A3B8] transition-colors group-hover:text-[#E2E8F0]">
-            All Members
-          </span>
-        </button>
+          {/* Admin Box */}
+          <div className="rounded-xl border border-[#27272A] bg-[#0E0E11] p-5">
+            <div className="mb-4 inline-flex rounded-md bg-green-500/10 px-2.5 py-1 text-[11px] font-medium text-green-500">
+              Admin
+            </div>
+            <ul className="space-y-3 text-sm text-[#E2E8F0]">
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#E2E8F0]" /> Manage projects and issues</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#E2E8F0]" /> Manage members</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#E2E8F0]" /> Cannot delete workspace</li>
+            </ul>
+          </div>
+          {/* Member Box */}
+          <div className="rounded-xl border border-[#27272A] bg-[#0E0E11] p-5">
+            <div className="mb-4 inline-flex rounded-md bg-[#27272A] px-2.5 py-1 text-[11px] font-medium text-[#E2E8F0]">
+              Member
+            </div>
+            <ul className="space-y-3 text-sm text-[#E2E8F0]">
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#E2E8F0]" /> View and create projects</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#E2E8F0]" /> View and create issues</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#E2E8F0]" /> Cannot manage members</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   )

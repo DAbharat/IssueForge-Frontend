@@ -1,6 +1,6 @@
 "use client"
 
-import { FolderKanban, User2 } from "lucide-react"
+import { FolderKanban, MoreVertical, CircleDot, Users } from "lucide-react"
 
 type ProjectCardProps = {
   id?: string | number
@@ -8,6 +8,7 @@ type ProjectCardProps = {
   description?: string
   lead_name?: string
   issueCount?: number
+  memberCount?: number
   onClick?: () => void
 }
 
@@ -25,13 +26,24 @@ export default function ProjectCard({
   title,
   description,
   lead_name,
-  issueCount,
+  issueCount = 0,
+  memberCount = 0,
   onClick,
 }: ProjectCardProps) {
+  // Extract initials for the avatar
+  const leadInitials = lead_name
+    ? lead_name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((p) => p.charAt(0).toUpperCase())
+        .join("")
+    : "U"
+
   return (
     <article
       id={id ? String(id) : undefined}
-      className="group relative mx-auto flex w-full max-w-155 min-h-55 cursor-pointer flex-col overflow-hidden rounded-sm border border-white/8 bg-[#101012] p-5 text-[#E2E8F0] transition-all duration-200 hover:-translate-y-0.5 hover:border-white/16 focus:outline-none focus:ring-2 focus:ring-[#5E6AD2]/60 sm:min-h-57.5"
+      className="group relative flex w-full flex-col overflow-hidden rounded-xl border border-[#27272A] bg-[#0E0E11] p-5 text-[#E2E8F0] transition-all duration-200 hover:border-[#3F3F46] focus:outline-none focus:ring-2 focus:ring-[#E2E8F0]/30 min-h-[220px]"
       onClick={onClick}
       onKeyDown={(event) => {
         if ((event.key === "Enter" || event.key === " ") && onClick) {
@@ -43,38 +55,54 @@ export default function ProjectCard({
       tabIndex={0}
     >
       {/* Top highlight stroke */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-to-r from-transparent via-white/15 to-transparent]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-to-r_from-transparent_via-white/10_to-transparent]" />
 
-      {/* Header row: icon + title, both vertically centered on the same line */}
-      <header className="flex items-center gap-2.5">
-        <FolderKanban className="h-4 w-4 shrink-0 text-[#94A3B8]" />
-        <h3 className="min-w-0 truncate text-base font-semibold leading-snug tracking-[-0.01em] text-[#E2E8F0] sm:text-[17px]">
-          {title || "Project Title"}
-        </h3>
+      <header className="flex items-start justify-between">
+        <div className="flex flex-col gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#27272A]">
+            <FolderKanban className="h-5 w-5 text-[#E2E8F0]" />
+          </div>
+          <h3 className="min-w-0 truncate text-base font-semibold leading-snug tracking-tight text-[#E2E8F0]">
+            {title || "Project Title"}
+          </h3>
+        </div>
+        <button
+          type="button"
+          className="text-[#94A3B8] transition-colors hover:text-[#E2E8F0]"
+          onClick={(e) => {
+            e.stopPropagation()
+            // Three dots menu placeholder
+          }}
+        >
+          <MoreVertical className="h-5 w-5" />
+        </button>
       </header>
 
-      {/* Description — aligned to the same left edge as the title */}
-      <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-[#B4BFCC]">
+      <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[#94A3B8]">
         {truncateText(description, 110)}
       </p>
 
-      {/* Spacer pushes footer to bottom */}
       <div className="flex-1" />
 
-      {/* Footer: lead + issue count */}
-      <footer className="mt-5 flex items-center justify-between gap-4 border-t border-white/6 pt-3.5">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/8 text-[#E2E8F0]">
-            <User2 className="h-3 w-3" />
+      <footer className="mt-6 flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#27272A] text-xs font-medium text-[#E2E8F0]">
+            {leadInitials}
           </span>
-          <span className="truncate text-sm leading-5 text-[#E2E8F0]">
-            <span className="text-[#94A3B8]">Lead: </span>
-            {lead_name || "Unknown lead"}
+          <span className="text-sm text-[#94A3B8]">
+            Lead: <span className="text-[#E2E8F0]">{lead_name || "Unknown lead"}</span>
           </span>
         </div>
 
-        <div className="shrink-0 rounded-full bg-white/6 px-2.5 py-1 text-xs font-medium tabular-nums text-[#E2E8F0]">
-          {typeof issueCount === "number" ? `${issueCount} issues` : "0 issues"}
+        <div className="flex items-center gap-6 text-xs font-medium text-[#94A3B8]">
+          <div className="flex items-center gap-1.5">
+            <CircleDot className="h-4 w-4" />
+            <span>{issueCount} issues</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Users className="h-4 w-4" />
+            <span>{memberCount} members</span>
+          </div>
         </div>
       </footer>
     </article>

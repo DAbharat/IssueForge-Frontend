@@ -60,16 +60,14 @@ function IssueCard({
 
 function EmptyColumnState() {
   return (
-    <div className="flex h-[440px] items-center justify-center rounded-xl border border-dashed border-[#2A2A2E] bg-[#101012]">
-      <div className="flex flex-col items-center px-6 text-center">
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-[#3F3F46] bg-[#141417] text-[#D4D4D8]">
-          <Check className="h-6 w-6" />
-        </div>
-        <p className="text-base font-semibold text-[#E2E8F0]">All Clear!</p>
-        <p className="mt-1.5 max-w-[200px] text-xs leading-relaxed text-[#94A3B8]">
-          Empty state message tin with refined padding.
-        </p>
+    <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-[#3F3F46] bg-[#141417] text-[#D4D4D8]">
+        <Check className="h-6 w-6" />
       </div>
+      <p className="text-base font-semibold text-[#E2E8F0]">All Clear!</p>
+      <p className="mt-1.5 max-w-[200px] text-xs leading-relaxed text-[#94A3B8]">
+        Empty state message tin with refined padding.
+      </p>
     </div>
   )
 }
@@ -180,53 +178,58 @@ export default function ProjectIssues({
       </div>
 
       {/* ── Kanban board: responsive 1 / 2 / 3 columns ── */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {Object.entries(STATUS_LABELS).map(([statusKey, label]) => {
-          const key = statusKey as keyof typeof STATUS_LABELS
-          const items = groupedIssues[key]
-          const isEmpty = items.length === 0
+      {/* ── Kanban board: responsive 1 / 2 / 3 columns ── */}
+<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3">
+  {Object.entries(STATUS_LABELS).map(([statusKey, label]) => {
+    const key = statusKey as keyof typeof STATUS_LABELS
+    const items = groupedIssues[key]
+    const isEmpty = items.length === 0
 
-          return (
-            <div key={statusKey} className="min-w-0">
-              {/* Column header */}
-              <div className="mb-2.5 flex items-center gap-2 rounded-md bg-[#18181B] px-3 py-2.5">
-                <div className={`h-2 w-2 shrink-0 rounded-full ${STATUS_COLORS[key]}`} />
-                <h3 className="text-[13px] font-semibold text-[#E2E8F0]">
-                  {label} ({items.length})
-                </h3>
-              </div>
+    return (
+      <section
+        key={statusKey}
+        className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-[#27272A] bg-[#101012]"
+      >
+        {/* Column header */}
+        <div className="flex items-center gap-2 border-b border-[#27272A] bg-[#18181B] px-3.5 py-3">
+          <div className={`h-2 w-2 shrink-0 rounded-full ${STATUS_COLORS[key]}`} />
+          <h3 className="text-[13px] font-semibold text-[#E2E8F0]">
+            {label} ({items.length})
+          </h3>
+        </div>
 
-              {/* Column body */}
-              {isEmpty ? (
-                <EmptyColumnState />
-              ) : (
-                <div
-                  className="
-                    max-h-[440px] space-y-2 overflow-y-auto pr-2
-                    [scrollbar-width:thin]
-                    [scrollbar-color:#3F3F46_#000000]
-                    [&::-webkit-scrollbar]:h-2
-                    [&::-webkit-scrollbar]:w-2
-                    [&::-webkit-scrollbar-track]:rounded-full
-                    [&::-webkit-scrollbar-track]:bg-[#000000]
-                    [&::-webkit-scrollbar-thumb]:rounded-full
-                    [&::-webkit-scrollbar-thumb]:bg-[#3F3F46]
-                    hover:[&::-webkit-scrollbar-thumb]:bg-[#52525B]
-                  "
-                >
-                  {items.map((issue) => (
-                    <IssueCard
-                      key={issue.id ?? issue.title}
-                      issue={issue}
-                      onClick={onClick}
-                    />
-                  ))}
-                </div>
-              )}
+        {/* Column body: same box for empty and filled states */}
+        <div className="flex min-h-[360px] flex-1 flex-col p-2.5">
+          {isEmpty ? (
+            <EmptyColumnState />
+          ) : (
+            <div
+              className="
+                max-h-[420px] space-y-2 overflow-y-auto
+                [scrollbar-gutter:stable]
+                [scrollbar-width:thin]
+                [scrollbar-color:#3F3F46_transparent]
+                [&::-webkit-scrollbar]:w-2
+                [&::-webkit-scrollbar-track]:bg-transparent
+                [&::-webkit-scrollbar-thumb]:rounded-full
+                [&::-webkit-scrollbar-thumb]:bg-[#3F3F46]
+                hover:[&::-webkit-scrollbar-thumb]:bg-[#52525B]
+              "
+            >
+              {items.map((issue) => (
+                <IssueCard
+                  key={issue.id ?? issue.title}
+                  issue={issue}
+                  onClick={onClick}
+                />
+              ))}
             </div>
-          )
-        })}
-      </div>
+          )}
+        </div>
+      </section>
+    )
+  })}
+</div>
     </div>
   )
 }

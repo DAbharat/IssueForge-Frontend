@@ -48,7 +48,7 @@ export default function WorkspaceDetails({
   }
 
   return (
-    <div className="h-full flex flex-col col-span-1 lg:col-span-2 rounded-xl border border-[#27272A] bg-[#0E0E11] p-5">
+    <div className="h-full flex flex-col col-span-1 lg:col-span-2 rounded-md border border-[#27272A] bg-[#0E0E11] p-5">
       <h2 className="mb-4 text-base font-semibold text-[#E2E8F0]">Workspace Details</h2>
       
       <div className="space-y-3 flex-1 flex flex-col">

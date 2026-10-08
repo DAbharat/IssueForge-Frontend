@@ -1,6 +1,6 @@
 "use client"
 
-import { Search, SlidersHorizontal, Plus, Globe, Copy, MoreVertical, UserPlus, Trash2, ArrowRightLeft } from "lucide-react"
+import { Search, SlidersHorizontal, Plus, Globe, Copy, MoreVertical, UserPlus, Trash2, ArrowRightLeft, ChevronDown } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 
@@ -17,6 +17,8 @@ import { useProfile } from "@/hooks/use-profile"
 import { createProject, listProjectsByLead, type Project } from "@/services/projects.service"
 import { listWorkspaceMembers, removeWorkspaceMember, promoteWorkspaceMember, type WorkspaceMember } from "@/services/workspaceMembers.service"
 import { updateWorkspaceName, getWorkspaceById, type Workspace } from "@/services/workspaces.service"
+import { listProjectIssues } from "@/services/issues.service"
+import { listProjectMembers } from "@/services/projectMembers.service"
 
 export default function WorkspacePage() {
   const searchParams = useSearchParams()
@@ -24,7 +26,7 @@ export default function WorkspacePage() {
   const [workspaceName, setWorkspaceName] = useState("Workspace")
   const [workspaceId, setWorkspaceId] = useState<string | number | null>(null)
   const [workspaceDetails, setWorkspaceDetails] = useState<Workspace | null>(null)
-  const [projects, setProjects] = useState<Project[]>([])
+  const [projects, setProjects] = useState<(Project & { issueCount?: number; memberCount?: number })[]>([])
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [members, setMembers] = useState<WorkspaceMemberOverviewItem[]>([])
   const [isLoadingMembers, setIsLoadingMembers] = useState(false)
@@ -74,7 +76,27 @@ export default function WorkspacePage() {
 
         if (!cancelled) {
           const projectList = Array.isArray(fetchedProjects) ? fetchedProjects : []
-          setProjects(projectList)
+          
+          // Fetch stats for all projects concurrently
+          const projectsWithStats = await Promise.all(
+            projectList.map(async (p) => {
+              try {
+                const [issues, members] = await Promise.all([
+                  listProjectIssues(p.id).catch(() => []),
+                  listProjectMembers(p.id).catch(() => [])
+                ])
+                return { 
+                  ...p, 
+                  issueCount: Array.isArray(issues) ? issues.length : 0, 
+                  memberCount: Array.isArray(members) ? members.length : 0 
+                }
+              } catch {
+                return { ...p, issueCount: 0, memberCount: 0 }
+              }
+            })
+          )
+
+          setProjects(projectsWithStats)
           if (wsDetails) {
             setWorkspaceDetails(wsDetails)
           }
@@ -105,6 +127,9 @@ export default function WorkspacePage() {
                 initials,
                 role: member.role,
                 status: "active",
+                email: member.email,
+                joined_at: member.joined_at || member.created_at,
+                isCurrentUser: profile?.id ? String(userId) === String(profile.id) : false,
               })
             })
           }
@@ -148,7 +173,25 @@ export default function WorkspacePage() {
       setShowCreateProject(false)
       // Refresh project list
       const updated = await listProjectsByLead(workspaceId)
-      setProjects(Array.isArray(updated) ? updated : [])
+      const projectList = Array.isArray(updated) ? updated : []
+      const projectsWithStats = await Promise.all(
+        projectList.map(async (p) => {
+          try {
+            const [issues, members] = await Promise.all([
+              listProjectIssues(p.id).catch(() => []),
+              listProjectMembers(p.id).catch(() => [])
+            ])
+            return { 
+              ...p, 
+              issueCount: Array.isArray(issues) ? issues.length : 0, 
+              memberCount: Array.isArray(members) ? members.length : 0 
+            }
+          } catch {
+            return { ...p, issueCount: 0, memberCount: 0 }
+          }
+        })
+      )
+      setProjects(projectsWithStats)
     } catch {
       // keep modal open so user can retry
     } finally {
@@ -283,34 +326,41 @@ export default function WorkspacePage() {
 
         {activeTab === "Projects" && (
           <div>
-            <div className="mb-6 flex w-full items-center">
-              <div className="relative w-[80%] pr-2 sm:pr-3">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+            <div className="mb-6 flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-[#E2E8F0]">Projects</h2>
+                <p className="mt-1 text-sm text-[#94A3B8]">Manage your projects in this workspace.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCreateProject(true)}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-gray-300"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Create project</span>
+              </button>
+            </div>
+
+            <div className="mb-6 flex w-full flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
                 <input
                   type="text"
                   placeholder="Search projects..."
-                  className="h-9 w-full rounded-sm border border-[#27272A] bg-[#18181B] pl-8 pr-3 text-sm text-[#E2E8F0] placeholder:text-[#94A3B8]/60 transition-colors focus:border-[#3F3F46] focus:outline-none"
+                  className="h-10 w-full rounded-md border border-[#27272A] bg-[#0E0E11] pl-9 pr-4 text-sm text-[#E2E8F0] placeholder:text-[#94A3B8] transition-colors focus:border-[#3F3F46] focus:outline-none"
                 />
               </div>
 
-              <div className="w-[5%] pr-2 sm:pr-3">
+              <div className="w-full sm:w-auto">
                 <button
                   type="button"
-                  aria-label="Filter projects"
-                  className="flex h-9 w-full items-center justify-center rounded-sm border border-[#27272A] bg-[#18181B] text-[#94A3B8] transition-colors hover:border-[#3F3F46] hover:text-[#E2E8F0]"
+                  className="flex h-10 w-full sm:w-auto items-center justify-between gap-2 rounded-md border border-[#27272A] bg-[#0E0E11] px-4 text-sm text-[#E2E8F0] transition-colors hover:bg-[#27272A]"
                 >
-                  <SlidersHorizontal className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className="w-[15%]">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateProject(true)}
-                  className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-sm border border-[#27272A] bg-[#27272A] text-sm font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46] hover:bg-[#3F3F46]"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">New</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[#94A3B8]">Sort by:</span>
+                    <span>Recently updated</span>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-[#94A3B8]" />
                 </button>
               </div>
             </div>
@@ -320,7 +370,7 @@ export default function WorkspacePage() {
             ) : emptyProjects ? (
               <div className="py-12 text-center text-sm text-[#94A3B8]">No projects yet</div>
             ) : (
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {projects.map((project) => (
                   <div
                     key={project.id}
@@ -334,7 +384,8 @@ export default function WorkspacePage() {
                       title={project.name || "Untitled project"}
                       description={project.description}
                       lead_name={project.lead_name || (project.lead_id ? `User #${project.lead_id}` : "Unknown lead")}
-                      issueCount={0}
+                      issueCount={project.issueCount || 0}
+                      memberCount={project.memberCount || 0}
                     />
                   </div>
                 ))}
@@ -398,6 +449,8 @@ export default function WorkspacePage() {
             initials: m.initials,
             role: m.role,
             status: m.status ?? "active",
+            email: m.email,
+            joined_at: m.joined_at,
           }))}
           onClose={() => setShowMembersDialog(false)}
           isAdmin={(() => {
@@ -431,7 +484,15 @@ export default function WorkspacePage() {
                         .slice(0, 2)
                         .map((p) => p.charAt(0).toUpperCase())
                         .join("") || "M"
-                    return { id: m.user_id ?? m.id, fullname, username: m.username, initials, status: "active" as const }
+                    return { 
+                      id: m.user_id ?? m.id, 
+                      fullname, 
+                      username: m.username, 
+                      initials, 
+                      status: "active" as const,
+                      email: m.email,
+                      joined_at: m.joined_at || m.created_at
+                    }
                   })
                 )
               }
