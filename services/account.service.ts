@@ -47,6 +47,7 @@ export type SearchUserResult = {
     id: number;
     username: string;
     fullname: string;
+    created_at?: string;
 };
 
 export async function searchUsers(query: string = "") {

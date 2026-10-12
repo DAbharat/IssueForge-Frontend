@@ -2,12 +2,16 @@ import axiosClient from "@/lib/axiosClient";
 import { AxiosError } from "axios";
 
 export type WorkspaceInvitation = {
-    id: string;
-    workspace_id: string;
+    id: string | number;
+    workspace_id: string | number;
     email?: string;
-    invited_by?: string;
+    invited_by?: string | number;
+    invited_user_id?: string | number;
+    username?: string;
+    fullname?: string;
     status?: string;
     created_at?: string;
+    responded_at?: string;
 };
 
 const getErrorMessage = (error: unknown, fallback: string) => {
@@ -15,9 +19,19 @@ const getErrorMessage = (error: unknown, fallback: string) => {
     return axiosError.response?.data?.message || axiosError.response?.data?.error || axiosError.message || fallback;
 };
 
-export async function createWorkspaceInvitation(workspaceId: string | number, data: { email: string }) {
+export async function createWorkspaceInvitation(
+    workspaceId: string | number,
+    data: { email?: string; user_id?: number | string }
+) {
     try {
-        const response = await axiosClient.post<WorkspaceInvitation>(`/api/workspaces/${workspaceId}/invitations`, data);
+        const payload =
+            data.user_id !== undefined
+                ? { user_id: Number(data.user_id) }
+                : data;
+        const response = await axiosClient.post<WorkspaceInvitation>(
+            `/api/workspaces/${workspaceId}/invitations`,
+            payload
+        );
         return response.data;
     } catch (error) {
         throw new Error(getErrorMessage(error, "An error occurred while creating the invitation."));

@@ -13,7 +13,10 @@ import WorkspaceMembersDialog from "@/components/workspace-members/WorkspaceMemb
 import WorkspaceMembersCard from "@/components/workspace-members/WorkspaceMembersCard"
 import WorkspaceTabs, { type WorkspaceTabKey } from "@/components/workspace/WorkspaceTab"
 import WorkspaceDetails from "@/components/workspace/WorkspaceDetails"
+import WorkspaceInvitations from "@/components/workspace/WorkspaceInvitations"
 import { useProfile } from "@/hooks/use-profile"
+import { useWorkspaceSwitcher } from "@/hooks/use-workspace-switcher"
+import { useWorkspaceInvitations } from "@/hooks/use-workspace-invitations"
 import { createProject, listProjectsByLead, type Project } from "@/services/projects.service"
 import { listWorkspaceMembers, removeWorkspaceMember, promoteWorkspaceMember, type WorkspaceMember } from "@/services/workspaceMembers.service"
 import { updateWorkspaceName, getWorkspaceById, type Workspace } from "@/services/workspaces.service"
@@ -23,6 +26,7 @@ import { listProjectMembers } from "@/services/projectMembers.service"
 export default function WorkspacePage() {
   const searchParams = useSearchParams()
   const { profile, isLoading: profileLoading } = useProfile()
+  const { activeWorkspace } = useWorkspaceSwitcher()
   const [workspaceName, setWorkspaceName] = useState("Workspace")
   const [workspaceId, setWorkspaceId] = useState<string | number | null>(null)
   const [workspaceDetails, setWorkspaceDetails] = useState<Workspace | null>(null)
@@ -42,21 +46,34 @@ export default function WorkspacePage() {
     if (!profile?.workspaces || profile.workspaces.length === 0) return
 
     const selectedWorkspaceId = searchParams.get("workspaceId")
+    const storedWorkspaceId = typeof window !== "undefined" ? window.localStorage.getItem("activeWorkspaceId") : null
+
+    const targetId = selectedWorkspaceId ?? storedWorkspaceId ?? (activeWorkspace?.id ? String(activeWorkspace.id) : null)
+
     const matchingWorkspace =
-      selectedWorkspaceId !== null
-        ? profile.workspaces.find((workspace) => String(workspace.id) === selectedWorkspaceId)
+      targetId !== null && targetId !== undefined
+        ? profile.workspaces.find((workspace) => String(workspace.id) === String(targetId))
         : undefined
 
-    const activeWorkspace = matchingWorkspace ?? profile.workspaces[0]
+    const chosenWorkspace = matchingWorkspace ?? activeWorkspace ?? profile.workspaces[0]
 
-    if (activeWorkspace?.name) {
-      setWorkspaceName(activeWorkspace.name)
+    if (chosenWorkspace?.name) {
+      setWorkspaceName(chosenWorkspace.name)
     }
 
+    if (chosenWorkspace?.id) {
+      setWorkspaceId(chosenWorkspace.id)
+    }
+  }, [profile, searchParams, activeWorkspace])
+
+  useEffect(() => {
     if (activeWorkspace?.id) {
       setWorkspaceId(activeWorkspace.id)
+      if (activeWorkspace.name) {
+        setWorkspaceName(activeWorkspace.name)
+      }
     }
-  }, [profile, searchParams])
+  }, [activeWorkspace?.id, activeWorkspace?.name])
 
   useEffect(() => {
     if (typeof workspaceId !== "string" && typeof workspaceId !== "number") return
@@ -211,11 +228,49 @@ export default function WorkspacePage() {
     }
   }
 
-  const isAdmin = (() => {
+  const currentMember = members.find(
+    (m) => m.isCurrentUser || (profile?.id && String(m.id) === String(profile.id))
+  )
+  const memberRole = currentMember?.role?.toLowerCase() ?? ""
+
+  const activeWsRole = (() => {
+    if (activeWorkspace?.id && String(activeWorkspace.id) === String(workspaceId)) {
+      return activeWorkspace.role?.toLowerCase() ?? ""
+    }
     const ws = profile?.workspaces?.find((w) => String(w.id) === String(workspaceId))
-    const role = ws?.role?.toLowerCase() ?? ""
-    return role === "admin" || role === "owner"
+    return ws?.role?.toLowerCase() ?? ""
   })()
+
+  const nameMatchRole = (() => {
+    const ws = profile?.workspaces?.find((w) => w.name === workspaceName)
+    return ws?.role?.toLowerCase() ?? ""
+  })()
+
+  const isAdmin = Boolean(
+    memberRole === "admin" ||
+    memberRole === "owner" ||
+    activeWsRole === "admin" ||
+    activeWsRole === "owner" ||
+    nameMatchRole === "admin" ||
+    nameMatchRole === "owner"
+  )
+
+  const {
+    pendingInvitations,
+    acceptedMembers,
+    rejectedInvitations,
+    isLoading: isLoadingInvitations,
+    cancellingId,
+    invitingId,
+    cancelInvite,
+    reInvite,
+  } = useWorkspaceInvitations(workspaceId)
+
+  useEffect(() => {
+    if (!profileLoading && !isLoadingMembers && members.length > 0 && !isAdmin && (activeTab === "Invitations" || activeTab === "Danger Zone")) {
+      setActiveTab("General")
+    }
+  }, [profileLoading, isLoadingMembers, members.length, isAdmin, activeTab])
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 lg:px-8">
@@ -238,7 +293,7 @@ export default function WorkspacePage() {
       </div>
 
       <div className="mb-4 mt-3">
-        <WorkspaceTabs activeTab={activeTab} onTabChange={setActiveTab} />
+        <WorkspaceTabs activeTab={activeTab} onTabChange={setActiveTab} isAdmin={isAdmin} />
       </div>
 
       <section className="space-y-3">
@@ -394,7 +449,24 @@ export default function WorkspacePage() {
           </div>
         )}
 
-        {activeTab === "Danger Zone" && (
+        {activeTab === "Invitations" && isAdmin && (
+          <WorkspaceInvitations
+            workspaceId={workspaceId}
+            isAdmin={isAdmin}
+            currentUserId={profile?.id}
+            currentUsername={profile?.username}
+            pendingInvitations={pendingInvitations}
+            acceptedMembers={acceptedMembers}
+            rejectedInvitations={rejectedInvitations}
+            isLoading={isLoadingInvitations}
+            cancellingId={cancellingId}
+            invitingId={invitingId}
+            onCancelInvite={cancelInvite}
+            onReInvite={reInvite}
+          />
+        )}
+
+        {activeTab === "Danger Zone" && isAdmin && (
           <div className="rounded-xl border border-red-500/20 bg-[#18181B] p-6">
             <div className="mb-6">
               <h2 className="text-lg font-medium text-red-500">Danger Zone</h2>
@@ -453,11 +525,7 @@ export default function WorkspacePage() {
             joined_at: m.joined_at,
           }))}
           onClose={() => setShowMembersDialog(false)}
-          isAdmin={(() => {
-            const ws = profile?.workspaces?.find((w) => String(w.id) === String(workspaceId))
-            const role = ws?.role?.toLowerCase() ?? ""
-            return role === "admin" || role === "owner"
-          })()}
+          isAdmin={isAdmin}
           currentUserId={profile?.id}
           onPromote={async (member) => {
             if (!workspaceId) return

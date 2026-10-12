@@ -35,6 +35,12 @@ const STATUS_COLORS: Record<keyof typeof STATUS_LABELS, string> = {
   done: "bg-[#22C55E]",          // green
 }
 
+const PRIORITY_CONFIG = {
+  low: { label: "Low", dot: "bg-[#71717A]" },
+  medium: { label: "Medium", dot: "bg-[#CA8A04]" },
+  high: { label: "High", dot: "bg-[#EF4444]" },
+}
+
 function IssueCard({
   issue,
   onClick,
@@ -42,6 +48,8 @@ function IssueCard({
   issue: ProjectIssueItem
   onClick?: (issueId: string | number) => void
 }) {
+  const prio = issue.priority ? PRIORITY_CONFIG[issue.priority] : null
+
   return (
     <button
       type="button"
@@ -49,25 +57,47 @@ function IssueCard({
         if (issue.id == null) return
         onClick?.(issue.id)
       }}
-      className="flex h-11 w-full items-center rounded-lg border border-[#2A2A2E] bg-[#18181B] px-3 text-left transition-all duration-200 hover:border-[#3F3F46] hover:bg-[#1E1E22]"
+      className="flex w-full flex-col rounded-lg border border-[#2A2A2E] bg-[#18181B] p-3 text-left transition-all duration-200 hover:border-[#3F3F46] hover:bg-[#1E1E22]"
     >
-      <p className="line-clamp-1 text-[13px] font-medium text-[#E2E8F0]">
+      <p className="line-clamp-2 text-[13px] font-medium leading-relaxed text-[#E2E8F0]">
         {issue.title}
       </p>
+
+      <div className="mt-3 flex w-full items-center justify-between">
+        {prio ? (
+          <div className="flex items-center gap-1.5">
+            <div className={`h-1.5 w-1.5 rounded-full ${prio.dot}`} />
+            <span className="text-[11px] font-medium text-[#94A3B8]">{prio.label}</span>
+          </div>
+        ) : (
+          <div />
+        )}
+
+        {issue.id != null && (
+          <span className="text-[11px] font-medium text-[#71717A]">
+            #{issue.id}
+          </span>
+        )}
+      </div>
     </button>
   )
 }
 
-function EmptyColumnState() {
+function EmptyColumnState({ status }: { status: keyof typeof STATUS_LABELS }) {
+  const text = status === "done" ? "You're all caught up!" : "All Clear!"
+  const subtext = status === "done" ? "" : "No tasks in this stage"
+
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-[#3F3F46] bg-[#141417] text-[#D4D4D8]">
+    <div className="my-auto flex h-full flex-1 flex-col items-center justify-center px-4 py-8 text-center">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-[#27272A] bg-[#141417] text-[#94A3B8]">
         <Check className="h-6 w-6" />
       </div>
-      <p className="text-base font-semibold text-[#E2E8F0]">All Clear!</p>
-      <p className="mt-1.5 max-w-[200px] text-xs leading-relaxed text-[#94A3B8]">
-        Empty state message tin with refined padding.
-      </p>
+      <p className="text-[15px] font-semibold text-[#E2E8F0]">{text}</p>
+      {subtext && (
+        <p className="mt-1.5 max-w-[200px] text-xs leading-relaxed text-[#94A3B8]">
+          {subtext}
+        </p>
+      )}
     </div>
   )
 }
@@ -178,58 +208,71 @@ export default function ProjectIssues({
       </div>
 
       {/* ── Kanban board: responsive 1 / 2 / 3 columns ── */}
-      {/* ── Kanban board: responsive 1 / 2 / 3 columns ── */}
-<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3">
-  {Object.entries(STATUS_LABELS).map(([statusKey, label]) => {
-    const key = statusKey as keyof typeof STATUS_LABELS
-    const items = groupedIssues[key]
-    const isEmpty = items.length === 0
+      <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#27272A] rounded-xl border border-[#27272A] bg-[#0E0E11] overflow-hidden">
+        {Object.entries(STATUS_LABELS).map(([statusKey, label]) => {
+          const key = statusKey as keyof typeof STATUS_LABELS
+          const items = groupedIssues[key]
+          const isEmpty = items.length === 0
 
-    return (
-      <section
-        key={statusKey}
-        className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-[#27272A] bg-[#101012]"
-      >
-        {/* Column header */}
-        <div className="flex items-center gap-2 border-b border-[#27272A] bg-[#18181B] px-3.5 py-3">
-          <div className={`h-2 w-2 shrink-0 rounded-full ${STATUS_COLORS[key]}`} />
-          <h3 className="text-[13px] font-semibold text-[#E2E8F0]">
-            {label} ({items.length})
-          </h3>
-        </div>
-
-        {/* Column body: same box for empty and filled states */}
-        <div className="flex min-h-[360px] flex-1 flex-col p-2.5">
-          {isEmpty ? (
-            <EmptyColumnState />
-          ) : (
-            <div
-              className="
-                max-h-[420px] space-y-2 overflow-y-auto
-                [scrollbar-gutter:stable]
-                [scrollbar-width:thin]
-                [scrollbar-color:#3F3F46_transparent]
-                [&::-webkit-scrollbar]:w-2
-                [&::-webkit-scrollbar-track]:bg-transparent
-                [&::-webkit-scrollbar-thumb]:rounded-full
-                [&::-webkit-scrollbar-thumb]:bg-[#3F3F46]
-                hover:[&::-webkit-scrollbar-thumb]:bg-[#52525B]
-              "
+          return (
+            <section
+              key={statusKey}
+              className="flex h-full min-h-[460px] min-w-0 flex-col bg-[#101012]"
             >
-              {items.map((issue) => (
-                <IssueCard
-                  key={issue.id ?? issue.title}
-                  issue={issue}
-                  onClick={onClick}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-    )
-  })}
-</div>
+              {/* Column header */}
+              <div className="flex h-11 items-center justify-between border-b border-[#27272A] bg-[#18181B] px-3.5">
+                <div className="flex items-center gap-2">
+                  <div className={`h-2 w-2 shrink-0 rounded-full ${STATUS_COLORS[key]}`} />
+                  <h3 className="text-[13px] font-semibold text-[#E2E8F0]">
+                    {label}
+                  </h3>
+                </div>
+                <span 
+                  className={`flex h-5 min-w-[20px] items-center justify-center rounded px-1.5 text-[10px] font-semibold ${
+                    key === "todo" ? "bg-[#27272A] text-[#94A3B8]" :
+                    key === "in_progress" ? "bg-[#CA8A04] text-white" :
+                    "bg-[#166534] text-white"
+                  }`}
+                >
+                  {items.length}
+                </span>
+              </div>
+
+              {/* Column body: same box for empty and filled states */}
+              <div
+                className={`flex h-full flex-1 flex-col p-3.5 ${
+                  isEmpty ? "items-center justify-center" : ""
+                }`}
+              >
+                {isEmpty ? (
+                  <EmptyColumnState status={key} />
+                ) : (
+                  <div
+                    className="
+                      flex w-full flex-col gap-2.5 overflow-y-auto max-h-[460px]
+                      [scrollbar-width:thin]
+                      [scrollbar-color:#3F3F46_transparent]
+                      [&::-webkit-scrollbar]:w-1.5
+                      [&::-webkit-scrollbar-track]:bg-transparent
+                      [&::-webkit-scrollbar-thumb]:rounded-full
+                      [&::-webkit-scrollbar-thumb]:bg-[#3F3F46]
+                      hover:[&::-webkit-scrollbar-thumb]:bg-[#52525B]
+                    "
+                  >
+                    {items.map((issue) => (
+                      <IssueCard
+                        key={issue.id ?? issue.title}
+                        issue={issue}
+                        onClick={onClick}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+          )
+        })}
+      </div>
     </div>
   )
 }

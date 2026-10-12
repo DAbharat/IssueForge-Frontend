@@ -3,7 +3,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 type ButtonVariant = "default" | "secondary" | "outline" | "ghost"
-type ButtonSize = "default" | "sm" | "lg"
+type ButtonSize = "default" | "sm" | "lg" | "icon" | "icon-sm"
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant
@@ -22,6 +22,8 @@ const sizeClasses: Record<ButtonSize, string> = {
   default: "h-10 px-4 py-2",
   sm: "h-9 rounded-md px-3",
   lg: "h-11 rounded-md px-8",
+  icon: "h-9 w-9 p-0",
+  "icon-sm": "h-7 w-7 p-0",
 }
 
 function Button({
@@ -33,6 +35,7 @@ function Button({
   ...props
 }: ButtonProps) {
   if (asChild && React.isValidElement(children)) {
+    const childProps = children.props as { className?: string }
     return React.cloneElement(
       children,
       {
@@ -41,7 +44,7 @@ function Button({
           variantClasses[variant],
           sizeClasses[size],
           className,
-          children.props.className
+          childProps?.className
         ),
         ...props,
       } as React.HTMLAttributes<HTMLElement>

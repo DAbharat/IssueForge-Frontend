@@ -4,6 +4,7 @@ export const WORKSPACE_TABS = [
   "General",
   "Members",
   "Projects",
+  "Invitations",
   "Danger Zone",
 ] as const
 
@@ -12,19 +13,28 @@ export type WorkspaceTabKey = (typeof WORKSPACE_TABS)[number]
 type WorkspaceTabsProps = {
   activeTab: WorkspaceTabKey
   onTabChange: (tab: WorkspaceTabKey) => void
+  isAdmin?: boolean
 }
 
 export default function WorkspaceTabs({
   activeTab,
   onTabChange,
+  isAdmin = false,
 }: WorkspaceTabsProps) {
+  const visibleTabs = WORKSPACE_TABS.filter((tab) => {
+    if (tab === "Danger Zone" || tab === "Invitations") {
+      return Boolean(isAdmin)
+    }
+    return true
+  })
+
   return (
     <div
       className="flex items-end gap-7 border-b border-[#27272A] pb-2"
       role="tablist"
       aria-label="Workspace sections"
     >
-      {WORKSPACE_TABS.map((tab) => {
+      {visibleTabs.map((tab) => {
         const isActive = activeTab === tab
 
         return (
