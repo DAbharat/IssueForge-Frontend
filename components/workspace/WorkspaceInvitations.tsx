@@ -5,6 +5,15 @@ import { Check, ChevronDown, Clock, Search, UserCheck, UserX, X } from "lucide-r
 
 import ProfileCard, { type ProfileCardUser } from "@/components/profile/ProfileCard"
 import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -12,6 +21,11 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { type WorkspaceInvitation } from "@/services/invitations.service"
 import { type WorkspaceMember } from "@/services/workspaceMembers.service"
+
+type PendingCancel = {
+  invitationId: string | number
+  user?: ProfileCardUser
+}
 
 export type InvitationTabFilter = "pending" | "accepted" | "rejected"
 
@@ -46,6 +60,19 @@ export default function WorkspaceInvitations({
 }: WorkspaceInvitationsProps) {
   const [filter, setFilter] = useState<InvitationTabFilter>("pending")
   const [searchQuery, setSearchQuery] = useState("")
+  const [pendingCancel, setPendingCancel] = useState<PendingCancel | null>(null)
+  const [isConfirming, setIsConfirming] = useState(false)
+
+  async function handleConfirmCancel() {
+    if (!pendingCancel) return
+    setIsConfirming(true)
+    try {
+      await onCancelInvite(pendingCancel.invitationId, pendingCancel.user)
+    } finally {
+      setIsConfirming(false)
+      setPendingCancel(null)
+    }
+  }
 
   // Filtered lists based on search query
   const query = searchQuery.trim().toLowerCase()
@@ -274,11 +301,14 @@ export default function WorkspaceInvitations({
                 isAdmin={isAdmin}
                 currentUserId={currentUserId}
                 isPendingInvite={true}
-                onCancelInvite={() => onCancelInvite(inv.id, {
-                  id: inv.invited_user_id,
-                  fullname: inv.fullname,
-                  username: inv.username,
-                  created_at: inv.created_at,
+                onCancelInvite={() => setPendingCancel({
+                  invitationId: inv.id,
+                  user: {
+                    id: inv.invited_user_id,
+                    fullname: inv.fullname,
+                    username: inv.username,
+                    created_at: inv.created_at,
+                  },
                 })}
                 isCancelling={cancellingId === inv.id}
                 cancelTooltipLabel="Cancel invitation"
@@ -363,6 +393,45 @@ export default function WorkspaceInvitations({
           </div>
         )
       )}
+      {/* ── Cancel Invitation Confirmation Dialog ── */}
+      <AlertDialog
+        open={pendingCancel !== null}
+        onOpenChange={(open) => {
+          if (!open && !isConfirming) setPendingCancel(null)
+        }}
+      >
+        <AlertDialogContent
+          className="border border-[#27272A] bg-[#0E0E11] text-[#E2E8F0] shadow-2xl"
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[#E2E8F0]">
+              Cancel invitation?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-[#94A3B8]">
+              {pendingCancel?.user?.fullname || pendingCancel?.user?.username
+                ? <>Are you sure you want to cancel the invitation for <span className="font-medium text-[#E2E8F0]">{pendingCancel.user?.fullname || pendingCancel.user?.username}</span>? They will no longer be able to join the workspace with this invitation.</>
+                : "Are you sure you want to cancel this invitation? The invitee will no longer be able to join the workspace with this invitation."
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="border-t border-[#27272A] bg-[#09090B]">
+            <AlertDialogCancel
+              className="border border-[#27272A] bg-transparent text-[#94A3B8] hover:bg-[#18181B] hover:text-[#E2E8F0]"
+              disabled={isConfirming}
+            >
+              Keep invitation
+            </AlertDialogCancel>
+            <button
+              type="button"
+              disabled={isConfirming}
+              onClick={handleConfirmCancel}
+              className="inline-flex h-9 items-center justify-center rounded-md border border-red-500/20 bg-red-500/10 px-4 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isConfirming ? "Cancelling…" : "Yes, cancel invitation"}
+            </button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

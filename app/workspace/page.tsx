@@ -4,6 +4,16 @@ import { Search, SlidersHorizontal, Plus, Globe, Copy, MoreVertical, UserPlus, T
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog"
+
 import ProjectCard from "@/components/projects/ProjectCard"
 import CreateProjectCard, { type CreateProjectPayload } from "@/components/projects/CreateProjectCard"
 import WorkspaceMembersOverview, {
@@ -19,7 +29,7 @@ import { useWorkspaceSwitcher } from "@/hooks/use-workspace-switcher"
 import { useWorkspaceInvitations } from "@/hooks/use-workspace-invitations"
 import { createProject, listProjectsByLead, type Project } from "@/services/projects.service"
 import { listWorkspaceMembers, removeWorkspaceMember, promoteWorkspaceMember, type WorkspaceMember } from "@/services/workspaceMembers.service"
-import { updateWorkspaceName, getWorkspaceById, type Workspace } from "@/services/workspaces.service"
+import { updateWorkspaceName, getWorkspaceById, deleteWorkspace, type Workspace } from "@/services/workspaces.service"
 import { listProjectIssues } from "@/services/issues.service"
 import { listProjectMembers } from "@/services/projectMembers.service"
 
@@ -37,7 +47,9 @@ export default function WorkspacePage() {
   const [showCreateProject, setShowCreateProject] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [showMembersDialog, setShowMembersDialog] = useState(false)
-  
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isDeletingWorkspace, setIsDeletingWorkspace] = useState(false)
+
   const [activeTab, setActiveTab] = useState<WorkspaceTabKey>("General")
 
   const router = useRouter()
@@ -213,6 +225,20 @@ export default function WorkspacePage() {
       // keep modal open so user can retry
     } finally {
       setIsCreating(false)
+    }
+  }
+
+  async function handleDeleteWorkspace() {
+    if (!workspaceId) return
+    setIsDeletingWorkspace(true)
+    try {
+      await deleteWorkspace(workspaceId)
+      router.push("/")
+    } catch {
+      // keep dialog open so user can retry
+    } finally {
+      setIsDeletingWorkspace(false)
+      setShowDeleteConfirm(false)
     }
   }
 
@@ -467,24 +493,69 @@ export default function WorkspacePage() {
         )}
 
         {activeTab === "Danger Zone" && isAdmin && (
-          <div className="rounded-xl border border-red-500/20 bg-[#18181B] p-6">
-            <div className="mb-6">
+          <div className="rounded-xl border border-red-500/20 bg-[#0E0E11] p-6">
+            <div className="mb-5">
               <h2 className="text-lg font-medium text-red-500">Danger Zone</h2>
               <p className="mt-1 text-sm text-[#94A3B8]">These actions cannot be undone.</p>
             </div>
-            
-            <div className="flex items-start gap-4 rounded-lg border border-[#27272A] bg-[#09090B] p-5 max-w-xl">
+
+            {/* Full-width Delete workspace card */}
+            <div className="flex items-center gap-4 rounded-lg border border-[#27272A] bg-[#09090B] p-5">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-500">
                 <Trash2 className="h-5 w-5" />
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-medium text-[#E2E8F0]">Delete workspace</h3>
-                <p className="mt-1 text-xs text-[#94A3B8] leading-relaxed">Permanently remove this workspace and all its data. This action is irreversible.</p>
-                <button className="mt-4 rounded-md border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-medium text-red-500 transition-colors hover:bg-red-500/20">
-                  Delete workspace
-                </button>
+                <p className="mt-0.5 text-xs text-[#94A3B8] leading-relaxed">
+                  Permanently remove this workspace and all its data. This action is irreversible.
+                </p>
               </div>
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="shrink-0 rounded-md border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-medium text-red-500 transition-colors hover:bg-red-500/20"
+              >
+                Delete workspace
+              </button>
             </div>
+
+            {/* Confirmation dialog */}
+            <AlertDialog
+              open={showDeleteConfirm}
+              onOpenChange={(open) => {
+                if (!open && !isDeletingWorkspace) setShowDeleteConfirm(false)
+              }}
+            >
+              <AlertDialogContent className="border border-[#27272A] bg-[#0E0E11] text-[#E2E8F0] shadow-2xl">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-[#E2E8F0]">
+                    Delete workspace?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="text-[#94A3B8]">
+                    Are you sure you want to permanently delete{" "}
+                    <span className="font-medium text-[#E2E8F0]">{workspaceName}</span>? This will
+                    remove all projects, issues, members, and data associated with this workspace.
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="border-t border-[#27272A] bg-[#09090B]">
+                  <AlertDialogCancel
+                    className="border border-[#27272A] bg-transparent text-[#94A3B8] hover:bg-[#18181B] hover:text-[#E2E8F0]"
+                    disabled={isDeletingWorkspace}
+                  >
+                    Keep workspace
+                  </AlertDialogCancel>
+                  <button
+                    type="button"
+                    disabled={isDeletingWorkspace}
+                    onClick={handleDeleteWorkspace}
+                    className="inline-flex h-9 items-center justify-center rounded-md border border-red-500/20 bg-red-500/10 px-4 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isDeletingWorkspace ? "Deleting…" : "Yes, delete workspace"}
+                  </button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         )}
       </section>

@@ -766,10 +766,12 @@ Auth required: Yes
 
 Response (200 OK): invitation object
 
-### 58) POST /api/invitations/{invitationID}/decline
-Auth required: Yes
+### 58) POST /api/invitations/{invitationID}/cancel
+Auth required: Yes (workspace admin only)
 
-This route is also used for cancellation/decline flow in the router; the backend behavior is the same as decline. Use the same payload conventions as above.
+Cancels a pending invitation. Only the workspace admin can cancel; the backend validates workspace admin authorization internally.
+
+Response (200 OK): invitation object
 
 ---
 

@@ -85,7 +85,7 @@ export async function declineInvitation(invitationId: string | number) {
 
 export async function cancelInvitation(invitationId: string | number) {
     try {
-        const response = await axiosClient.post<WorkspaceInvitation>(`/api/invitations/${invitationId}/decline`);
+        const response = await axiosClient.post<WorkspaceInvitation>(`/api/invitations/${invitationId}/cancel`);
         return response.data;
     } catch (error) {
         throw new Error(getErrorMessage(error, "An error occurred while canceling the invitation."));
