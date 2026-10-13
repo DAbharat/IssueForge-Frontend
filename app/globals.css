@@ -132,3 +132,40 @@ body {
     @apply font-sans;
   }
 }
+
+@keyframes attachment-slide-in-left {
+  from {
+    opacity: 0.7;
+    transform: translateX(-7%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes attachment-slide-in-right {
+  from {
+    opacity: 0.7;
+    transform: translateX(7%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.attachment-slide-in-left {
+  animation: attachment-slide-in-left 220ms ease-out;
+}
+
+.attachment-slide-in-right {
+  animation: attachment-slide-in-right 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attachment-slide-in-left,
+  .attachment-slide-in-right {
+    animation: none;
+  }
+}

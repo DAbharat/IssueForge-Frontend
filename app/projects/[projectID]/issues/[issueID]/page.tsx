@@ -10,7 +10,7 @@ import IssueActivityTab, {
     type IssueActivityTabItem,
 } from "@/components/issues/IssueActivityTab"
 import IssueDate from "@/components/issues/IssueDate"
-import IssueDetails from "@/components/issues/IssueDetails"
+import IssueDetails, { type IssueAttachment } from "@/components/issues/IssueDetails"
 import IssueStatusAndPriority, {
     type IssuePriority,
     type IssueStatus,
@@ -20,6 +20,11 @@ import { getIssueById, updateIssuePriority, updateIssueStatus } from "@/services
 import { listIssueActivities } from "@/services/activities.service"
 import { getProjectById } from "@/services/projects.service"
 import { me } from "@/services/account.service"
+import {
+    createAttachment,
+    deleteAttachment,
+    listIssueAttachments,
+} from "@/services/attachments.service"
 import { useComments } from "@/hooks/use-comments"
 
 function formatDate(dateString?: string) {
@@ -85,6 +90,9 @@ export default function IssuePage({
     const [issueAssigneeId, setIssueAssigneeId] = useState<string | number | null>(null)
     const [issueCreatedBy, setIssueCreatedBy] = useState<string | number | null>(null)
     const [projectLeadId, setProjectLeadId] = useState<string | number | null>(null)
+    const [attachments, setAttachments] = useState<IssueAttachment[]>([])
+    const [isUploadingAttachment, setIsUploadingAttachment] = useState(false)
+    const [deletingAttachmentId, setDeletingAttachmentId] = useState<string | null>(null)
 
     // ── Comments ──────────────────────────────────────────────────────────────
     const { comments, isSubmitting, submitComment } = useComments(issueID)
@@ -111,11 +119,12 @@ export default function IssuePage({
                 const resolvedIssueId = issueID
                 if (!resolvedIssueId) return
 
-                const [issue, issueActivities, project, currentUser] = await Promise.all([
+                const [issue, issueActivities, project, currentUser, issueAttachments] = await Promise.all([
                     getIssueById(resolvedIssueId),
                     listIssueActivities(resolvedIssueId),
                     getProjectById(resolvedProjectID),
                     me(),
+                    listIssueAttachments(resolvedIssueId),
                 ])
 
                 if (cancelled) return
@@ -137,6 +146,13 @@ export default function IssuePage({
                 setIssueAssigneeId(issue.assigned_to ?? null)
                 setIssueCreatedBy(issue.created_by ?? issue.creator_id ?? null)
                 setProjectLeadId(project.lead_id ?? null)
+                setAttachments(
+                    issueAttachments.map((attachment) => ({
+                        id: String(attachment.id),
+                        name: attachment.original_name,
+                        url: attachment.url,
+                    }))
+                )
 
                 setActivity(
                     issueActivities.map((item) => ({
@@ -205,9 +221,61 @@ export default function IssuePage({
         }
     }
 
+    const handleUploadImages = async (images: Array<{ file: File; blob: Blob }>) => {
+        if (!issueID) return
+
+        setIsUploadingAttachment(true)
+        try {
+            const uploaded = await Promise.all(
+                images.map(({ file, blob }) => {
+                    const formData = new FormData()
+                    formData.append("file", blob, file.name)
+                    return createAttachment(issueID, formData)
+                })
+            )
+            setAttachments((current) => [
+                ...current,
+                ...uploaded.map((attachment, index) => ({
+                    id: String(attachment.id),
+                    name: attachment.original_name,
+                    url: attachment.url,
+                    previewUrl: URL.createObjectURL(images[index].blob),
+                })),
+            ])
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Unable to upload attachment")
+            throw err
+        } finally {
+            setIsUploadingAttachment(false)
+        }
+    }
+
+    const handleDeleteAttachment = async (attachmentId: string) => {
+        setDeletingAttachmentId(attachmentId)
+        try {
+            await deleteAttachment(attachmentId)
+            setAttachments((current) => current.filter((attachment) => attachment.id !== attachmentId))
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Unable to delete attachment")
+            throw err
+        } finally {
+            setDeletingAttachmentId(null)
+        }
+    }
+
     const renderTabContent = () => {
         if (activeTab === "Details") {
-            return <IssueDetails title={issueTitle} description={issueDescription} />
+            return (
+                <IssueDetails
+                    title={issueTitle}
+                    description={issueDescription}
+                    attachments={attachments}
+                    isUploadingAttachment={isUploadingAttachment}
+                    deletingAttachmentId={deletingAttachmentId}
+                    onDeleteAttachment={handleDeleteAttachment}
+                    onUploadImages={handleUploadImages}
+                />
+            )
         }
 
         if (activeTab === "Comments") {

@@ -2,11 +2,14 @@ import axiosClient from "@/lib/axiosClient";
 import { AxiosError } from "axios";
 
 export type Attachment = {
-    id: string;
-    issue_id?: string;
-    comment_id?: string;
-    filename: string;
+    id: string | number;
+    issue_id: string | number;
+    comment_id?: string | number | null;
+    original_name: string;
     url?: string;
+    mime_type?: string;
+    resource_type?: string;
+    file_size?: number;
     created_at?: string;
 };
 
@@ -17,11 +20,15 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 
 export async function createAttachment(issueId: string | number, formData: FormData) {
     try {
-        const response = await axiosClient.post<Attachment>(`/api/issues/${issueId}/attachments`, formData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        });
+        const response = await axiosClient.post<Attachment>(
+            `/api/issues/${issueId}/attachments`,
+            formData,
+            {
+                headers: {
+                    "Content-Type": undefined,
+                },
+            }
+        );
         return response.data;
     } catch (error) {
         throw new Error(getErrorMessage(error, "An error occurred while uploading the attachment."));
