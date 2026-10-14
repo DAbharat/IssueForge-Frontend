@@ -22,7 +22,7 @@ export default function WorkspaceTabs({
   isAdmin = false,
 }: WorkspaceTabsProps) {
   const visibleTabs = WORKSPACE_TABS.filter((tab) => {
-    if (tab === "Danger Zone" || tab === "Invitations") {
+    if (tab === "Danger Zone") {
       return Boolean(isAdmin)
     }
     return true

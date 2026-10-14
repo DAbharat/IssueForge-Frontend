@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import type { ReactNode } from "react"
 import CommentBox from "@/components/comments/CommentBox"
 import CommentCard from "@/components/comments/CommentCard"
 import IssueActivity, {
@@ -16,7 +17,7 @@ import IssueStatusAndPriority, {
     type IssueStatus,
 } from "@/components/issues/IssueStatusAndPriority"
 import IssueTabs, { type IssueTabKey } from "@/components/issues/IssueTabs"
-import { getIssueById, updateIssuePriority, updateIssueStatus } from "@/services/issues.service"
+import { getIssueById, updateIssueDetails, updateIssuePriority, updateIssueStatus } from "@/services/issues.service"
 import { listIssueActivities } from "@/services/activities.service"
 import { getProjectById } from "@/services/projects.service"
 import { me } from "@/services/account.service"
@@ -25,8 +26,16 @@ import {
     deleteAttachment,
     listIssueAttachments,
 } from "@/services/attachments.service"
-import { useComments } from "@/hooks/use-comments"
+import { useComments, type CommentViewModel } from "@/hooks/use-comments"
 import { useLabels } from "@/hooks/use-labels"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 
 function formatDate(dateString?: string) {
     if (!dateString) return "—"
@@ -94,9 +103,21 @@ export default function IssuePage({
     const [attachments, setAttachments] = useState<IssueAttachment[]>([])
     const [isUploadingAttachment, setIsUploadingAttachment] = useState(false)
     const [deletingAttachmentId, setDeletingAttachmentId] = useState<string | null>(null)
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+    const [editTitle, setEditTitle] = useState("")
+    const [editDescription, setEditDescription] = useState("")
+    const [isSavingEdit, setIsSavingEdit] = useState(false)
 
     // ── Comments ──────────────────────────────────────────────────────────────
-    const { comments, isSubmitting, submitComment } = useComments(issueID)
+    const {
+        comments,
+        isSubmitting,
+        error: commentsError,
+        submitComment,
+        editComment,
+        removeComment,
+        reload: reloadComments,
+    } = useComments(issueID, currentUserId)
     const {
         projectLabels,
         issueLabels,
@@ -106,6 +127,9 @@ export default function IssuePage({
         removeLabel,
     } = useLabels(projectID, issueID)
     const [commentText, setCommentText] = useState("")
+    const [replyToCommentId, setReplyToCommentId] = useState<string | number | null>(null)
+    const [commentAttachment, setCommentAttachment] = useState<File | null>(null)
+    const [expandedCommentIds, setExpandedCommentIds] = useState<Set<string>>(new Set())
 
     useEffect(() => {
         params.then((p) => {
@@ -230,6 +254,37 @@ export default function IssuePage({
         }
     }
 
+    const canEditDetails =
+        currentUserId !== null &&
+        (String(currentUserId) === String(issueCreatedBy) ||
+            String(currentUserId) === String(projectLeadId))
+
+    function handleOpenEditDialog() {
+        setEditTitle(issueTitle)
+        setEditDescription(issueDescription)
+        setIsEditDialogOpen(true)
+    }
+
+    async function handleSaveIssueDetails() {
+        if (!issueID || editTitle.trim().length < 8 || editDescription.trim().length < 10) return
+
+        setIsSavingEdit(true)
+        try {
+            const updatedIssue = await updateIssueDetails(issueID, {
+                title: editTitle.trim(),
+                description: editDescription.trim(),
+            })
+            setIssueTitle(updatedIssue.title)
+            setIssueDescription(updatedIssue.description ?? "")
+            setUpdatedAt(updatedIssue.updated_at)
+            setIsEditDialogOpen(false)
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Unable to update issue details")
+        } finally {
+            setIsSavingEdit(false)
+        }
+    }
+
     const handleUploadImages = async (images: Array<{ file: File; blob: Blob }>) => {
         if (!issueID) return
 
@@ -272,6 +327,94 @@ export default function IssuePage({
         }
     }
 
+    async function handleSubmitComment(parentCommentId?: string | number) {
+        const created = await submitComment(commentText, parentCommentId)
+        if (!created) return
+
+        if (commentAttachment && issueID) {
+            const formData = new FormData()
+            formData.append("file", commentAttachment)
+            formData.append("comment_id", String(created.id))
+            await createAttachment(issueID, formData)
+            await reloadComments()
+        }
+
+        setCommentText("")
+        setReplyToCommentId(null)
+        setCommentAttachment(null)
+    }
+
+    function toggleCommentReplies(commentId: string | number) {
+        setExpandedCommentIds((current) => {
+            const next = new Set(current)
+            const key = String(commentId)
+            if (next.has(key)) next.delete(key)
+            else next.add(key)
+            return next
+        })
+    }
+
+    function renderCommentTree(comment: CommentViewModel, allComments: CommentViewModel[]): ReactNode {
+        const replies = allComments.filter(
+            (candidate) => String(candidate.parentCommentId) === String(comment.id)
+        )
+        const replyComposer = replyToCommentId !== null && String(replyToCommentId) === String(comment.id) ? (
+            <div className="mt-2">
+                <CommentBox
+                    value={commentText}
+                    onChange={setCommentText}
+                    onImageSelect={setCommentAttachment}
+                    placeholder={`Reply to ${comment.authorName}`}
+                    selectedFileName={commentAttachment?.name}
+                    onSubmit={() => handleSubmitComment(comment.id)}
+                    isSubmitting={isSubmitting}
+                />
+
+                    {commentsError && (
+                        <div className="rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                            {commentsError}
+                        </div>
+                    )}
+            </div>
+        ) : null
+
+        return (
+            <CommentCard
+                key={comment.id}
+                commentId={comment.id}
+                authorName={comment.authorName}
+                authorUsername={comment.authorUsername}
+                authorInitials={comment.authorInitials}
+                content={comment.content}
+                relativeTime={comment.relativeTime}
+                isAuthor={currentUserId !== null && String(comment.authorId) === String(currentUserId)}
+                isEdited={comment.isEdited}
+                attachments={comment.attachments}
+                isUpdating={isSubmitting}
+                replyCount={replies.length}
+                isRepliesOpen={expandedCommentIds.has(String(comment.id))}
+                onToggleReplies={() => toggleCommentReplies(comment.id)}
+                replyComposer={replyComposer}
+                onReply={() => {
+                    setReplyToCommentId(comment.id)
+                    setCommentText("")
+                    setCommentAttachment(null)
+                    setExpandedCommentIds((current) => new Set(current).add(String(comment.id)))
+                }}
+                onEdit={editComment}
+                onDelete={async (commentId) => {
+                    try {
+                        await removeComment(commentId)
+                    } catch (err) {
+                        setError(err instanceof Error ? err.message : "Unable to delete comment")
+                    }
+                }}
+            >
+                {replies.map((reply) => renderCommentTree(reply, allComments))}
+            </CommentCard>
+        )
+    }
+
     const renderTabContent = () => {
         if (activeTab === "Details") {
             return (
@@ -297,19 +440,15 @@ export default function IssuePage({
             return (
                 <div className="flex flex-col gap-6">
                     {/* ── Comment box ── */}
-                    <CommentBox
+                    {replyToCommentId === null && <CommentBox
                         value={commentText}
                         onChange={setCommentText}
-                        onImageSelect={() => {
-                            // Image attachment is a future enhancement;
-                            // the API contract doesn't include image upload for comments yet.
-                        }}
-                        onSubmit={async () => {
-                            const ok = await submitComment(commentText)
-                            if (ok) setCommentText("")
-                        }}
+                        onImageSelect={setCommentAttachment}
+                        placeholder="Write a comment"
+                        selectedFileName={commentAttachment?.name}
+                        onSubmit={() => handleSubmitComment()}
                         isSubmitting={isSubmitting}
-                    />
+                    />}
 
                     {/* ── Comment list ── */}
                     {comments.length === 0 ? (
@@ -318,16 +457,9 @@ export default function IssuePage({
                         </div>
                     ) : (
                         <div className="flex flex-col gap-3">
-                            {comments.map((comment) => (
-                                <CommentCard
-                                    key={comment.id}
-                                    authorName={comment.authorName}
-                                    authorUsername={comment.authorUsername}
-                                    authorInitials={comment.authorInitials}
-                                    content={comment.content}
-                                    relativeTime={comment.relativeTime}
-                                />
-                            ))}
+                            {comments
+                                .filter((comment) => !comment.parentCommentId)
+                                .map((comment) => renderCommentTree(comment, comments))}
                         </div>
                     )}
                 </div>
@@ -385,9 +517,12 @@ export default function IssuePage({
 
                                         <button
                                             type="button"
+                                            onClick={handleOpenEditDialog}
+                                            disabled={!canEditDetails || isSavingEdit}
+                                            title={canEditDetails ? "Edit issue details" : "Only the issue creator or project lead can edit this issue"}
                                             className="inline-flex h-8 items-center rounded-md border border-[#27272A] bg-[#18181B] px-3 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46]"
                                         >
-                                            Edit
+                                            {isSavingEdit ? "Saving…" : "Edit"}
                                         </button>
                                     </div>
                                 </div>
@@ -524,6 +659,71 @@ export default function IssuePage({
                                 </div>
                             </div>
                         </header>
+
+                        <Dialog
+                            open={isEditDialogOpen}
+                            onOpenChange={(open) => {
+                                if (!isSavingEdit) setIsEditDialogOpen(open)
+                            }}
+                        >
+                            <DialogContent className="border border-[#27272A] bg-[#0E0E11] text-[#E2E8F0] shadow-2xl sm:max-w-lg">
+                                <DialogHeader>
+                                    <DialogTitle className="text-[#E2E8F0]">Edit issue</DialogTitle>
+                                    <DialogDescription className="text-[#94A3B8]">
+                                        Update the issue title and description.
+                                    </DialogDescription>
+                                </DialogHeader>
+
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5">
+                                        <label htmlFor="edit-issue-title" className="text-xs font-medium text-[#94A3B8]">
+                                            Title
+                                        </label>
+                                        <input
+                                            id="edit-issue-title"
+                                            value={editTitle}
+                                            onChange={(event) => setEditTitle(event.target.value)}
+                                            disabled={isSavingEdit}
+                                            className="w-full rounded-md border border-[#27272A] bg-[#18181B] px-3 py-2 text-sm text-[#E2E8F0] outline-none placeholder:text-[#52525B] focus:border-[#3F3F46] disabled:opacity-50"
+                                        />
+                                        <p className="text-[11px] text-[#71717A]">Use 8 to 50 characters.</p>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label htmlFor="edit-issue-description" className="text-xs font-medium text-[#94A3B8]">
+                                            Description
+                                        </label>
+                                        <textarea
+                                            id="edit-issue-description"
+                                            value={editDescription}
+                                            onChange={(event) => setEditDescription(event.target.value)}
+                                            disabled={isSavingEdit}
+                                            className="min-h-32 w-full resize-y rounded-md border border-[#27272A] bg-[#18181B] px-3 py-2 text-sm leading-6 text-[#E2E8F0] outline-none placeholder:text-[#52525B] focus:border-[#3F3F46] disabled:opacity-50"
+                                        />
+                                        <p className="text-[11px] text-[#71717A]">Use 10 to 300 characters.</p>
+                                    </div>
+                                </div>
+
+                                <DialogFooter className="border-t border-[#27272A] bg-[#09090B]">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsEditDialogOpen(false)}
+                                        disabled={isSavingEdit}
+                                        className="rounded-md border border-[#27272A] bg-transparent px-3 py-2 text-xs font-medium text-[#94A3B8] transition-colors hover:bg-[#18181B] hover:text-[#E2E8F0] disabled:opacity-40"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveIssueDetails}
+                                        disabled={isSavingEdit || editTitle.trim().length < 8 || editDescription.trim().length < 10}
+                                        className="rounded-md border border-[#3F3F46] bg-[#27272A] px-3 py-2 text-xs font-medium text-[#E2E8F0] transition-colors hover:bg-[#3F3F46] disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                        {isSavingEdit ? "Saving…" : "Save changes"}
+                                    </button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
 
                         {/* Tabs */}
                         <div className="pt-10">

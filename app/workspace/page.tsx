@@ -24,9 +24,11 @@ import WorkspaceMembersCard from "@/components/workspace-members/WorkspaceMember
 import WorkspaceTabs, { type WorkspaceTabKey } from "@/components/workspace/WorkspaceTab"
 import WorkspaceDetails from "@/components/workspace/WorkspaceDetails"
 import WorkspaceInvitations from "@/components/workspace/WorkspaceInvitations"
+import PendingWorkspaceInvitations from "@/components/workspace/PendingWorkspaceInvitations"
 import { useProfile } from "@/hooks/use-profile"
 import { useWorkspaceSwitcher } from "@/hooks/use-workspace-switcher"
 import { useWorkspaceInvitations } from "@/hooks/use-workspace-invitations"
+import { usePendingInvitations } from "@/hooks/use-pending-invitations"
 import { createProject, listProjectsByLead, type Project } from "@/services/projects.service"
 import { listWorkspaceMembers, removeWorkspaceMember, promoteWorkspaceMember, type WorkspaceMember } from "@/services/workspaceMembers.service"
 import { updateWorkspaceName, getWorkspaceById, deleteWorkspace, type Workspace } from "@/services/workspaces.service"
@@ -291,9 +293,17 @@ export default function WorkspacePage() {
     cancelInvite,
     reInvite,
   } = useWorkspaceInvitations(workspaceId)
+  const {
+    invitations: receivedInvitations,
+    isLoading: isLoadingReceivedInvitations,
+    updatingId: updatingReceivedInvitationId,
+    error: receivedInvitationError,
+    accept: acceptReceivedInvitation,
+    decline: declineReceivedInvitation,
+  } = usePendingInvitations()
 
   useEffect(() => {
-    if (!profileLoading && !isLoadingMembers && members.length > 0 && !isAdmin && (activeTab === "Invitations" || activeTab === "Danger Zone")) {
+    if (!profileLoading && !isLoadingMembers && members.length > 0 && !isAdmin && activeTab === "Danger Zone") {
       setActiveTab("General")
     }
   }, [profileLoading, isLoadingMembers, members.length, isAdmin, activeTab])
@@ -489,6 +499,17 @@ export default function WorkspacePage() {
             invitingId={invitingId}
             onCancelInvite={cancelInvite}
             onReInvite={reInvite}
+          />
+        )}
+
+        {activeTab === "Invitations" && !isAdmin && (
+          <PendingWorkspaceInvitations
+            invitations={receivedInvitations}
+            isLoading={isLoadingReceivedInvitations}
+            updatingId={updatingReceivedInvitationId}
+            error={receivedInvitationError}
+            onAccept={acceptReceivedInvitation}
+            onDecline={declineReceivedInvitation}
           />
         )}
 

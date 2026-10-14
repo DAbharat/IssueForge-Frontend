@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator"
 type RegisterViewProps = {
     firstName: string
     lastName: string
+    username: string
     email: string
     password: string
     showPassword: boolean
@@ -18,6 +19,7 @@ type RegisterViewProps = {
     errorMessage: string
     onFirstNameChange: (value: string) => void
     onLastNameChange: (value: string) => void
+    onUsernameChange: (value: string) => void
     onEmailChange: (value: string) => void
     onPasswordChange: (value: string) => void
     onTogglePassword: () => void
@@ -28,6 +30,7 @@ type RegisterViewProps = {
 export default function RegisterView({
     firstName,
     lastName,
+    username,
     email,
     password,
     showPassword,
@@ -36,6 +39,7 @@ export default function RegisterView({
     errorMessage,
     onFirstNameChange,
     onLastNameChange,
+    onUsernameChange,
     onEmailChange,
     onPasswordChange,
     onTogglePassword,
@@ -116,10 +120,19 @@ export default function RegisterView({
                                         name="last-name"
                                         value={lastName}
                                         onChange={(e) => onLastNameChange(e.target.value)}
-                                        placeholder="Display Name"
+                                        placeholder="Last Name"
                                         className="h-11 rounded-sm border-[#222631] bg-[#1A1D24] text-[#E2E8F0] placeholder:text-[#94A3B8] focus-visible:border-[#5E6AD2] focus-visible:ring-[#5E6AD2]/30"
                                     />
                                 </div>
+
+                                <Input
+                                    id="username"
+                                    name="username"
+                                    value={username}
+                                    onChange={(e) => onUsernameChange(e.target.value)}
+                                    placeholder="Username"
+                                    className="h-11 rounded-sm border-[#222631] bg-[#1A1D24] text-[#E2E8F0] placeholder:text-[#94A3B8] focus-visible:border-[#5E6AD2] focus-visible:ring-[#5E6AD2]/30"
+                                />
 
                                 <Input
                                     id="email"

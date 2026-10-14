@@ -2,9 +2,9 @@ import axiosClient from "@/lib/axiosClient";
 import { AxiosError } from "axios";
 
 export type Comment = {
-    id: string;
-    issue_id: string;
-    author_id: string;
+    id: string | number;
+    issue_id: string | number;
+    author_id: string | number;
     author_name?: string;
     parent_comment_id?: string | null;
     content: string;
@@ -15,6 +15,7 @@ export type Comment = {
 
 export type CreateCommentRequest = {
     content: string;
+    parent_comment_id?: string | number;
 };
 
 export type UpdateCommentRequest = {
@@ -30,6 +31,10 @@ export async function createComment(issueId: string | number, data: CreateCommen
     try {
         const response = await axiosClient.post<Comment>(`/api/issues/${issueId}/comments`, {
             content: data.content,
+            parent_comment_id:
+                data.parent_comment_id === undefined
+                    ? undefined
+                    : Number(data.parent_comment_id),
         });
         return response.data;
     } catch (error) {

@@ -18,6 +18,8 @@ export type CommentBoxProps = {
     disabled?: boolean
     /** Shows a loading/submitting state on the submit button */
     isSubmitting?: boolean
+    placeholder?: string
+    selectedFileName?: string | null
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -29,6 +31,8 @@ export default function CommentBox({
     onSubmit,
     disabled = false,
     isSubmitting = false,
+    placeholder = "Write a comment",
+    selectedFileName = null,
 }: CommentBoxProps) {
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -56,7 +60,7 @@ export default function CommentBox({
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 disabled={disabled}
-                placeholder="Write a comment"
+                placeholder={placeholder}
                 rows={4}
                 className={[
                     "w-full resize-none rounded-t-lg bg-transparent px-4 py-3",
@@ -83,6 +87,11 @@ export default function CommentBox({
                     <ImageIcon className="h-4 w-4" />
                     <span>Upload image</span>
                 </button>
+                {selectedFileName && (
+                    <span className="ml-2 max-w-48 truncate text-[11px] text-[#71717A]">
+                        {selectedFileName}
+                    </span>
+                )}
 
                 {/* Hidden file input */}
                 <input

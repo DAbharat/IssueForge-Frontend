@@ -2,10 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react"
 import {
+    deleteComment,
     listIssueComments,
     createComment,
+    updateComment,
     type Comment,
 } from "@/services/comments.service"
+import { listCommentAttachments, type Attachment } from "@/services/attachments.service"
 
 // ─── Relative time helper ─────────────────────────────────────────────────────
 
@@ -27,24 +30,28 @@ function formatRelativeTime(dateString?: string): string {
 // ─── Public shape returned by the hook ───────────────────────────────────────
 
 export type CommentViewModel = {
-    id: string
+    id: string | number
+    authorId: string | number
     authorName: string
     authorUsername: string
     authorInitials: string
     content: string
     relativeTime: string
+    parentCommentId?: string | number | null
+    isEdited: boolean
+    attachments: Attachment[]
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useComments(issueId: string | null) {
+export function useComments(issueId: string | null, currentUserId?: string | number | null) {
     const [comments, setComments] = useState<CommentViewModel[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     // ── Map raw API comment → view model ──────────────────────────────────────
-    function toViewModel(c: Comment): CommentViewModel {
+    function toViewModel(c: Comment, attachments: Attachment[] = []): CommentViewModel {
         const name = c.author_name ?? `User #${c.author_id}`
         // Derive initials from name (up to 2 words)
         const initials = name
@@ -55,12 +62,16 @@ export function useComments(issueId: string | null) {
 
         return {
             id: String(c.id),
+            authorId: c.author_id,
             authorName: name,
             // Username is not returned by the comment API; fall back to ID
             authorUsername: `user${c.author_id}`,
             authorInitials: initials,
             content: c.content,
             relativeTime: formatRelativeTime(c.created_at),
+            parentCommentId: c.parent_comment_id,
+            isEdited: Boolean(c.is_edited),
+            attachments,
         }
     }
 
@@ -73,7 +84,13 @@ export function useComments(issueId: string | null) {
 
         try {
             const raw = await listIssueComments(issueId)
-            setComments(raw.map(toViewModel))
+            const mapped = await Promise.all(
+                raw.map(async (comment) => {
+                    const attachments = await listCommentAttachments(comment.id).catch(() => [])
+                    return toViewModel(comment, attachments)
+                })
+            )
+            setComments(mapped)
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to load comments")
         } finally {
@@ -82,24 +99,30 @@ export function useComments(issueId: string | null) {
     }, [issueId])
 
     useEffect(() => {
+        // Initial server-state load for this issue.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         loadComments()
     }, [loadComments])
 
     // ── Submit a new comment ──────────────────────────────────────────────────
     const submitComment = useCallback(
-        async (content: string): Promise<boolean> => {
-            if (!issueId || !content.trim()) return false
+        async (content: string, parentCommentId?: string | number): Promise<CommentViewModel | null> => {
+            if (!issueId || !content.trim()) return null
 
             setIsSubmitting(true)
             setError(null)
 
             try {
-                const created = await createComment(issueId, { content: content.trim() })
-                setComments((prev) => [...prev, toViewModel(created)])
-                return true
+                const created = await createComment(issueId, {
+                    content: content.trim(),
+                    parent_comment_id: parentCommentId,
+                })
+                const viewModel = toViewModel(created)
+                setComments((prev) => [...prev, viewModel])
+                return viewModel
             } catch (err) {
                 setError(err instanceof Error ? err.message : "Failed to post comment")
-                return false
+                return null
             } finally {
                 setIsSubmitting(false)
             }
@@ -107,12 +130,28 @@ export function useComments(issueId: string | null) {
         [issueId]
     )
 
+    const editComment = useCallback(async (commentId: string | number, content: string) => {
+        if (!content.trim()) return
+        const updated = await updateComment(commentId, { content: content.trim() })
+        setComments((current) => current.map((comment) =>
+            String(comment.id) === String(commentId) ? toViewModel(updated, comment.attachments) : comment
+        ))
+    }, [])
+
+    const removeComment = useCallback(async (commentId: string | number) => {
+        await deleteComment(commentId)
+        setComments((current) => current.filter((comment) => String(comment.id) !== String(commentId)))
+    }, [])
+
     return {
         comments,
         isLoading,
         isSubmitting,
         error,
         submitComment,
+        editComment,
+        removeComment,
+        currentUserId,
         reload: loadComments,
     }
 }

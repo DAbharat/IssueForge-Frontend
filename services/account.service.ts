@@ -1,10 +1,10 @@
 import axiosClient from "@/lib/axiosClient";
 import { ApiResponse } from "@/types/ApiResponse";
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
 
 export async function register(userData: {
+    username: string;
     fullname: string;
-    display_name: string;
     email: string;
     password: string
 }) {
@@ -12,9 +12,10 @@ export async function register(userData: {
         const response = await axiosClient.post(`/api/register`, userData)
         return response.data
     } catch (error) {
-        const axiosError = error as AxiosError<ApiResponse>
-        console.error("Error registering account: ", axiosError.response?.data.message || axiosError.message)
-        throw new Error(axiosError.response?.data.message || "An error occurred while registering user")
+        const axiosError = error as AxiosError<ApiResponse<null> & { error?: string }>
+        const message = axiosError.response?.data.error || axiosError.response?.data.message || axiosError.message
+        console.error("Error registering account: ", message)
+        throw new Error(message || "An error occurred while registering user")
     }
 }
 

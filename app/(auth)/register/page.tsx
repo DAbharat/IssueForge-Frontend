@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const router = useRouter()
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
+  const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [acceptedTerms, setAcceptedTerms] = useState(false)
@@ -19,7 +20,6 @@ export default function RegisterPage() {
   const [errorMessage, setErrorMessage] = useState("")
 
   const fullname = `${firstName.trim()} ${lastName.trim()}`.trim()
-  const displayName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || firstName.trim() || lastName.trim()
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -30,8 +30,8 @@ export default function RegisterPage() {
     //   return
     // }
 
-    if (!firstName.trim() || !lastName.trim()) {
-      setErrorMessage("Please enter both first and last name.")
+    if (!firstName.trim() || !lastName.trim() || !username.trim()) {
+      setErrorMessage("Please enter your first name, last name, and username.")
       return
     }
 
@@ -39,8 +39,8 @@ export default function RegisterPage() {
 
     try {
       await register({
+        username: username.trim(),
         fullname,
-        display_name: displayName,
         email,
         password,
       })
@@ -56,6 +56,7 @@ export default function RegisterPage() {
     <Register
       firstName={firstName}
       lastName={lastName}
+      username={username}
       email={email}
       password={password}
       acceptedTerms={acceptedTerms}
@@ -64,6 +65,7 @@ export default function RegisterPage() {
       errorMessage={errorMessage}
       onFirstNameChange={setFirstName}
       onLastNameChange={setLastName}
+      onUsernameChange={setUsername}
       onEmailChange={setEmail}
       onPasswordChange={setPassword}
       onAcceptedTermsChange={setAcceptedTerms}

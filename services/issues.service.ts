@@ -31,7 +31,7 @@ export type UpdateIssueRequest = {
     description?: string;
     status?: string;
     priority?: string;
-    assignee_id?: string;
+    assigned_to?: string | number;
     due_date?: string;
 };
 
@@ -88,7 +88,7 @@ export async function updateIssueStatus(issueId: string | number, status: string
 
 export async function updateIssueAssignee(issueId: string | number, assigneeId: string | number) {
     try {
-        const response = await axiosClient.patch<Issue>(`/api/issues/${issueId}/assignee`, { assignee_id: assigneeId });
+        const response = await axiosClient.patch<Issue>(`/api/issues/${issueId}/assignee`, { assigned_to: assigneeId });
         return response.data;
     } catch (error) {
         throw new Error(getErrorMessage(error, "An error occurred while updating the assignee."));
