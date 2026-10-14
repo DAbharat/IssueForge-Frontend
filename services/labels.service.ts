@@ -2,10 +2,10 @@ import axiosClient from "@/lib/axiosClient";
 import { AxiosError } from "axios";
 
 export type Label = {
-    id: string;
+    id: string | number;
     name: string;
     color?: string;
-    project_id?: string;
+    project_id?: string | number;
     created_at?: string;
     updated_at?: string;
 };

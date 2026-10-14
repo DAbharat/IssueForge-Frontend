@@ -158,7 +158,7 @@ export default function ProjectIssues({
   return (
     <div className="w-full">
       {/* ── Header: title left, Create Issue right ── */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      {/* <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-base font-semibold tracking-[-0.01em] text-[#E2E8F0]">
           Issues of <span className="text-[#5E6AD2]">{projectName}</span>
         </h2>
@@ -171,7 +171,7 @@ export default function ProjectIssues({
           <Plus className="h-3.5 w-3.5" />
           Create Issue
         </button>
-      </div>
+      </div> */}
 
       {/* ── Controls row: search + filter + sort ── */}
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2.5">

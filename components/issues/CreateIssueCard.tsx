@@ -1,6 +1,6 @@
 "use client"
 
-import { Lock } from "lucide-react"
+import { Lock, Tag } from "lucide-react"
 import { useState } from "react"
 import {
   Select,
@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import type { Label } from "@/services/labels.service"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,6 +28,7 @@ export type CreateIssuePayload = {
   /** Always "TODO" — fixed at creation time */
   status: "TODO"
   priority: "LOW" | "MEDIUM" | "HIGH"
+  label_ids?: Array<string | number>
 }
 
 export type CreateIssueCardProps = {
@@ -38,6 +40,8 @@ export type CreateIssueCardProps = {
   onCancel: () => void
   /** Disables the form while the parent is saving */
   isSubmitting?: boolean
+  /** Project labels available to assign after issue creation */
+  labels?: Label[]
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -63,11 +67,13 @@ export default function CreateIssueCard({
   onSubmit,
   onCancel,
   isSubmitting = false,
+  labels = [],
 }: CreateIssueCardProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [assigneeId, setAssigneeId] = useState<string>("unassigned")
   const [priority, setPriority] = useState<Priority>("LOW")
+  const [selectedLabelIds, setSelectedLabelIds] = useState<Array<string | number>>([])
 
   const canSubmit =
     title.trim().length >= 8 &&
@@ -84,6 +90,7 @@ export default function CreateIssueCard({
         assigneeId === "unassigned" ? undefined : assigneeId,
       status: "TODO",
       priority,
+      label_ids: selectedLabelIds,
     })
   }
 
@@ -212,6 +219,47 @@ export default function CreateIssueCard({
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-1.5 text-xs font-medium text-[#94A3B8]">
+            <Tag className="h-3.5 w-3.5" />
+            Labels
+          </label>
+          {labels.length === 0 ? (
+            <p className="rounded-md border border-dashed border-[#27272A] px-3 py-2 text-xs text-[#52525B]">
+              No project labels available. Create labels in Project Settings.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2 rounded-md border border-[#27272A] bg-[#18181B] p-3">
+              {labels.map((label) => {
+                const selected = selectedLabelIds.some((id) => String(id) === String(label.id))
+                return (
+                  <button
+                    key={label.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedLabelIds((current) =>
+                        selected
+                          ? current.filter((id) => String(id) !== String(label.id))
+                          : [...current, label.id]
+                      )
+                    }}
+                    disabled={isSubmitting}
+                    className={[
+                      "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                      selected
+                        ? "border-[#5E6AD2] bg-[#5E6AD2]/15 text-[#E2E8F0]"
+                        : "border-[#27272A] bg-transparent text-[#94A3B8] hover:border-[#3F3F46] hover:text-[#E2E8F0]",
+                    ].join(" ")}
+                  >
+                    {label.color && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: label.color }} />}
+                    {label.name}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* Status — read-only, always TODO */}

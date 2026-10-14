@@ -10,6 +10,7 @@ import {
   Plus,
   Tag,
   Trash2,
+  X,
 } from "lucide-react"
 import ImageUploadWithCrop from "@/components/common/ImageUploadWithCrop"
 import {
@@ -31,8 +32,9 @@ export type IssueAttachment = {
 }
 
 export type IssueLabel = {
-  id: string
+  id: string | number
   name: string
+  color?: string
 }
 
 export type IssueDetailsProps = {
@@ -40,9 +42,14 @@ export type IssueDetailsProps = {
   description?: string
   attachments?: IssueAttachment[]
   labels?: IssueLabel[]
+  availableLabels?: IssueLabel[]
   isUploadingAttachment?: boolean
+  isLoadingLabels?: boolean
+  isUpdatingLabels?: boolean
   deletingAttachmentId?: string | null
   onAddLabel?: () => void
+  onAttachLabels?: (labelIds: Array<string | number>) => Promise<void>
+  onRemoveLabel?: (labelId: string | number) => Promise<void>
   onDeleteAttachment?: (attachmentId: string) => Promise<void>
   /**
    * Called with each image blob to upload.
@@ -56,9 +63,14 @@ export default function IssueDetails({
   description,
   attachments = [],
   labels = [],
+  availableLabels = [],
   isUploadingAttachment = false,
+  isLoadingLabels = false,
+  isUpdatingLabels = false,
   deletingAttachmentId = null,
   onAddLabel,
+  onAttachLabels,
+  onRemoveLabel,
   onDeleteAttachment,
   onUploadImages,
 }: IssueDetailsProps) {
@@ -66,6 +78,8 @@ export default function IssueDetails({
   const [activeAttachmentIndex, setActiveAttachmentIndex] = useState(0)
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
   const [slideDirection, setSlideDirection] = useState<"left" | "right" | null>(null)
+  const [isLabelPickerOpen, setIsLabelPickerOpen] = useState(false)
+  const [selectedLabelIds, setSelectedLabelIds] = useState<Array<string | number>>([])
 
   const pendingAttachment = attachments.find((file) => file.id === pendingDeleteId)
   const safeActiveAttachmentIndex =
@@ -99,6 +113,21 @@ export default function IssueDetails({
       else showNextAttachment()
     }
     setTouchStartX(null)
+  }
+
+  function toggleLabelSelection(labelId: string | number) {
+    setSelectedLabelIds((current) =>
+      current.some((id) => String(id) === String(labelId))
+        ? current.filter((id) => String(id) !== String(labelId))
+        : [...current, labelId]
+    )
+  }
+
+  async function handleAttachLabels() {
+    if (!onAttachLabels || selectedLabelIds.length === 0) return
+    await onAttachLabels(selectedLabelIds)
+    setSelectedLabelIds([])
+    setIsLabelPickerOpen(false)
   }
 
   return (
@@ -275,13 +304,71 @@ export default function IssueDetails({
 
           <button
             type="button"
-            onClick={onAddLabel}
+            onClick={() => {
+              onAddLabel?.()
+              setIsLabelPickerOpen((open) => !open)
+            }}
+            disabled={isLoadingLabels || isUpdatingLabels}
             className="inline-flex items-center gap-1.5 rounded-md border border-[#27272A] bg-[#18181B] px-3 py-1.5 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46]"
           >
             <Plus className="h-3.5 w-3.5" />
-            Add label
+            {isLoadingLabels ? "Loading…" : "Add label"}
           </button>
         </div>
+
+        {isLabelPickerOpen && (
+          <div className="mt-3 rounded-lg border border-[#27272A] bg-[#101012] p-3">
+            <div className="flex flex-wrap gap-2">
+              {availableLabels.map((label) => {
+                const isAssigned = labels.some((assigned) => String(assigned.id) === String(label.id))
+                const isSelected = selectedLabelIds.some((id) => String(id) === String(label.id))
+
+                return (
+                  <button
+                    key={label.id}
+                    type="button"
+                    disabled={isAssigned || isUpdatingLabels}
+                    onClick={() => toggleLabelSelection(label.id)}
+                    className={[
+                      "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
+                      isAssigned
+                        ? "cursor-not-allowed border-[#27272A] bg-[#18181B] text-[#52525B]"
+                        : isSelected
+                          ? "border-[#5E6AD2] bg-[#5E6AD2]/15 text-[#E2E8F0]"
+                          : "border-[#27272A] bg-[#18181B] text-[#D4D4D8] hover:border-[#3F3F46]",
+                    ].join(" ")}
+                  >
+                    {label.color && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: label.color }} />}
+                    {label.name}
+                  </button>
+                )
+              })}
+            </div>
+            {availableLabels.length === 0 && (
+              <p className="text-xs text-[#71717A]">
+                No project labels are available. Create one in Project Settings first.
+              </p>
+            )}
+            <div className="mt-3 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsLabelPickerOpen(false)}
+                className="rounded-md px-3 py-1.5 text-xs text-[#94A3B8] transition-colors hover:text-[#E2E8F0]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={selectedLabelIds.length === 0 || isUpdatingLabels}
+                onClick={handleAttachLabels}
+                className="inline-flex items-center gap-1.5 rounded-md border border-[#3F3F46] bg-[#27272A] px-3 py-1.5 text-xs font-medium text-[#E2E8F0] transition-colors hover:bg-[#3F3F46] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {isUpdatingLabels && <Loader2 className="h-3 w-3 animate-spin" />}
+                Apply labels
+              </button>
+            </div>
+          </div>
+        )}
 
         {labels.length === 0 ? (
           <p className="mt-2 text-xs text-[#52525B]">No labels yet</p>
@@ -290,9 +377,21 @@ export default function IssueDetails({
             {labels.map((label) => (
               <span
                 key={label.id}
-                className="inline-flex items-center rounded-md border border-[#27272A] bg-[#18181B] px-2.5 py-1 text-xs font-medium text-[#D4D4D8]"
+                className="inline-flex items-center gap-1.5 rounded-md border border-[#27272A] bg-[#18181B] px-2.5 py-1 text-xs font-medium text-[#D4D4D8]"
               >
+                {label.color && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: label.color }} />}
                 {label.name}
+                {onRemoveLabel && (
+                  <button
+                    type="button"
+                    aria-label={`Remove ${label.name} label`}
+                    disabled={isUpdatingLabels}
+                    onClick={() => onRemoveLabel(label.id)}
+                    className="ml-0.5 rounded-sm text-[#71717A] transition-colors hover:text-[#E2E8F0] disabled:opacity-40"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </span>
             ))}
           </div>

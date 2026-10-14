@@ -9,11 +9,20 @@ import ProjectMembers, {
   type ProjectMemberItem,
   type WorkspaceMemberOption,
 } from "@/components/projects/ProjectMembers"
+import ProjectOverview from "@/components/projects/ProjectOverview"
+import ProjectActivity from "@/components/projects/ProjectActivity"
+import ProjectSettings from "@/components/projects/ProjectSettings"
 import CreateIssueCard, {
   type CreateIssueMember,
   type CreateIssuePayload,
 } from "@/components/issues/CreateIssueCard"
-import { getProjectById, type Project } from "@/services/projects.service"
+import {
+  deleteProject,
+  getProjectById,
+  updateProjectDetails,
+  updateProjectLead,
+  type Project,
+} from "@/services/projects.service"
 import { listProjectIssues, createIssue, type Issue } from "@/services/issues.service"
 import {
   addMemberToProject,
@@ -27,6 +36,7 @@ import {
 } from "@/services/workspaceMembers.service"
 import { searchUsers } from "@/services/account.service"
 import { useProfile } from "@/hooks/use-profile"
+import { useLabels } from "@/hooks/use-labels"
 import { useRouter } from "next/navigation"
 
 type PageProps = {
@@ -48,7 +58,16 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
   const [showCreateIssue, setShowCreateIssue] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [isAddingMember, setIsAddingMember] = useState(false)
+  const [isSavingSettings, setIsSavingSettings] = useState(false)
+  const [isDeletingProject, setIsDeletingProject] = useState(false)
   const { profile } = useProfile()
+  const {
+    projectLabels,
+    isUpdating: isUpdatingLabels,
+    attachLabels,
+    createProjectLabel,
+    deleteProjectLabel,
+  } = useLabels(projectID)
   const router = useRouter()
 
   // Resolve params from Promise
@@ -113,6 +132,7 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
               description: issue.description,
               status,
               priority,
+              assignee: issue.assignee_name,
               createdAt: issue.created_at,
             }
           })
@@ -274,6 +294,9 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
         createdAt: created.created_at,
       }
       setIssues((prev) => [newItem, ...prev])
+      if (payload.label_ids && payload.label_ids.length > 0) {
+        await attachLabels(payload.label_ids, String(created.id))
+      }
       setShowCreateIssue(false)
     } catch {
       // silently swallow for now — a toast system can be added later
@@ -331,6 +354,61 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
     } finally {
       setIsAddingMember(false)
     }
+  }
+
+  async function handleSaveProjectDetails(details: { name: string; description: string }) {
+    if (!projectID) return
+
+    setIsSavingSettings(true)
+    try {
+      const updatedProject = await updateProjectDetails(projectID, details)
+      setProject(updatedProject)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to update project details")
+    } finally {
+      setIsSavingSettings(false)
+    }
+  }
+
+  async function handleSaveProjectLead(leadId: string) {
+    if (!projectID) return
+
+    setIsSavingSettings(true)
+    try {
+      const updatedProject = await updateProjectLead(projectID, { lead_id: leadId })
+      setProject(updatedProject)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to update project lead")
+    } finally {
+      setIsSavingSettings(false)
+    }
+  }
+
+  async function handleDeleteProject() {
+    if (!projectID) return
+
+    setIsDeletingProject(true)
+    try {
+      await deleteProject(projectID)
+      router.push("/workspace")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to delete project")
+      setIsDeletingProject(false)
+    }
+  }
+
+  function renderCreateIssueCard() {
+    if (!showCreateIssue) return null
+
+    return (
+      <CreateIssueCard
+        members={cardMembers}
+        labels={projectLabels}
+        isSubmitting={isCreating}
+        onSubmit={handleCreateIssue}
+        onCancel={() => setShowCreateIssue(false)}
+      />
+    )
   }
 
   if (isLoading) {
@@ -404,86 +482,23 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
       {/* Tab Content */}
       <div>
         {activeTab === "Overview" && (
-          <div className="space-y-6">
-            {/* ── Statistics Cards ── */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 backdrop-blur-sm">
-                <p className="text-xs font-medium text-zinc-400">Total Issues</p>
-                <p className="mt-2 text-2xl font-bold tracking-tight text-zinc-50 tabular-nums">
-                  {issues.length}
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 backdrop-blur-sm">
-                <p className="text-xs font-medium text-zinc-400">Team Members</p>
-                <p className="mt-2 text-2xl font-bold tracking-tight text-zinc-50 tabular-nums">
-                  {members.length}
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 backdrop-blur-sm">
-                <p className="text-xs font-medium text-zinc-400">Completed Issues</p>
-                <p className="mt-2 text-2xl font-bold tracking-tight text-zinc-50 tabular-nums">
-                  {issues.filter((i) => i.status === "done").length}
-                </p>
-              </div>
-            </div>
-
-            {/* ── Project Details ── */}
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-sm">
-              <h2 className="mb-4 text-sm font-semibold text-zinc-100">
-                Project Details
-              </h2>
-
-              <div className="space-y-4 text-sm">
-                <div className="grid grid-cols-1 items-start gap-1 sm:grid-cols-4 sm:gap-4">
-                  <span className="text-xs font-medium text-zinc-400">Name</span>
-                  <span className="text-zinc-200 sm:col-span-3">{project.name}</span>
-                </div>
-
-                {project.description && (
-                  <div className="grid grid-cols-1 items-start gap-1 border-t border-zinc-800/60 pt-4 sm:grid-cols-4 sm:gap-4">
-                    <span className="text-xs font-medium text-zinc-400">
-                      Description
-                    </span>
-                    <span className="leading-relaxed text-zinc-300 sm:col-span-3">
-                      {project.description}
-                    </span>
-                  </div>
-                )}
-
-                {project.lead_name && (
-                  <div className="grid grid-cols-1 items-start gap-1 border-t border-zinc-800/60 pt-4 sm:grid-cols-4 sm:gap-4">
-                    <span className="text-xs font-medium text-zinc-400">Lead</span>
-                    <span className="text-zinc-200 sm:col-span-3">
-                      {project.lead_name}
-                    </span>
-                  </div>
-                )}
-
-                {project.created_at && (
-                  <div className="grid grid-cols-1 items-start gap-1 border-t border-zinc-800/60 pt-4 sm:grid-cols-4 sm:gap-4">
-                    <span className="text-xs font-medium text-zinc-400">Created</span>
-                    <span className="text-zinc-200 sm:col-span-3">
-                      {new Date(project.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
+          <div className="space-y-4">
+            {renderCreateIssueCard()}
+            <ProjectOverview
+              project={project}
+              issues={issues}
+              members={members}
+              onCreateIssue={() => setShowCreateIssue(true)}
+              onIssueSelect={(issueId) => router.push(`/projects/${projectID}/issues/${issueId}`)}
+              onViewIssues={() => setActiveTab("Issues")}
+              onViewMembers={() => setActiveTab("Members")}
+            />
           </div>
         )}
 
         {activeTab === "Issues" && (
           <div className="space-y-4">
-            {showCreateIssue && (
-              <CreateIssueCard
-                members={cardMembers}
-                isSubmitting={isCreating}
-                onSubmit={handleCreateIssue}
-                onCancel={() => setShowCreateIssue(false)}
-              />
-            )}
+            {renderCreateIssueCard()}
             <ProjectIssues
               projectName={project.name}
               issues={issues}
@@ -505,6 +520,27 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
             isLead={isLead}
             isAddingMember={isAddingMember}
             onAddMember={handleAddMember}
+          />
+        )}
+
+        {activeTab === "Activity" && (
+          <ProjectActivity onViewIssues={() => setActiveTab("Issues")} />
+        )}
+
+        {activeTab === "Settings" && (
+          <ProjectSettings
+            project={project}
+            members={members}
+            isLead={isLead}
+            isSaving={isSavingSettings}
+            isDeleting={isDeletingProject}
+            labels={projectLabels}
+            isUpdatingLabels={isUpdatingLabels}
+            onSaveDetails={handleSaveProjectDetails}
+            onSaveLead={handleSaveProjectLead}
+            onDeleteProject={handleDeleteProject}
+            onCreateLabel={createProjectLabel}
+            onDeleteLabel={deleteProjectLabel}
           />
         )}
       </div>

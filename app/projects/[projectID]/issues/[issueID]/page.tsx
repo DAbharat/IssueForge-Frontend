@@ -26,6 +26,7 @@ import {
     listIssueAttachments,
 } from "@/services/attachments.service"
 import { useComments } from "@/hooks/use-comments"
+import { useLabels } from "@/hooks/use-labels"
 
 function formatDate(dateString?: string) {
     if (!dateString) return "—"
@@ -96,6 +97,14 @@ export default function IssuePage({
 
     // ── Comments ──────────────────────────────────────────────────────────────
     const { comments, isSubmitting, submitComment } = useComments(issueID)
+    const {
+        projectLabels,
+        issueLabels,
+        isLoading: isLoadingLabels,
+        isUpdating: isUpdatingLabels,
+        attachLabels,
+        removeLabel,
+    } = useLabels(projectID, issueID)
     const [commentText, setCommentText] = useState("")
 
     useEffect(() => {
@@ -270,9 +279,15 @@ export default function IssuePage({
                     title={issueTitle}
                     description={issueDescription}
                     attachments={attachments}
+                    labels={issueLabels}
+                    availableLabels={projectLabels}
                     isUploadingAttachment={isUploadingAttachment}
+                    isLoadingLabels={isLoadingLabels}
+                    isUpdatingLabels={isUpdatingLabels}
                     deletingAttachmentId={deletingAttachmentId}
                     onDeleteAttachment={handleDeleteAttachment}
+                    onAttachLabels={attachLabels}
+                    onRemoveLabel={removeLabel}
                     onUploadImages={handleUploadImages}
                 />
             )
