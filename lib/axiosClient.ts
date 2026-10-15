@@ -11,6 +11,17 @@ const axiosClient = axios.create({
 let isRefreshing = false
 let refreshQueue: Array<() => void> = []
 
+function setCookie(name: string, value: string, days: number = 7) {
+  if (typeof document === "undefined") return
+  const maxAge = days * 24 * 60 * 60
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax`
+}
+
+function deleteCookie(name: string) {
+  if (typeof document === "undefined") return
+  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`
+}
+
 function clearAuthTokens() {
   if (typeof window === "undefined") {
     return
@@ -20,6 +31,10 @@ function clearAuthTokens() {
   window.localStorage.removeItem("access_token")
   window.localStorage.removeItem("refreshToken")
   window.localStorage.removeItem("refresh_token")
+  deleteCookie("accessToken")
+  deleteCookie("access_token")
+  deleteCookie("refreshToken")
+  deleteCookie("refresh_token")
 }
 
 async function refreshAccessToken() {
@@ -54,6 +69,8 @@ async function refreshAccessToken() {
 
   window.localStorage.setItem("accessToken", nextAccessToken)
   window.localStorage.setItem("access_token", nextAccessToken)
+  setCookie("accessToken", nextAccessToken, 7)
+  setCookie("access_token", nextAccessToken, 7)
 
   return nextAccessToken
 }

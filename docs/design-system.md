@@ -45,7 +45,8 @@ The application should use a restrained visual language where typography, spacin
 
 ### Avoid
 
-* Excessive gradients
+* Gradients of any color in the real system (landing pages can have subtle gradients, but never in purple or indigo)
+* Any purple or indigo colors
 * Glassmorphism
 * Excessive glowing effects
 * Excessive shadows
@@ -69,7 +70,7 @@ The following five colors form the **primary IssueForge design palette** and sho
 
 | Role               | Color     | Usage                                                        |
 | ------------------ | --------- | ------------------------------------------------------------ |
-| Primary Accent     | `#5E6AD2` | Focus indicators and rare, intentional interactive highlights |
+| Primary Accent     | `#DDE1E5` | Active indicators, focus rings, selected badges/highlights   |
 | App Background     | `#000000` | Main application canvas                                      |
 | Surface Background | `#18181B` | Cards, sidebars, panels, kanban columns                      |
 | Primary Text       | `#E2E8F0` | Headings, important content, primary labels                  |
@@ -82,23 +83,22 @@ These colors should be reused consistently rather than replaced with arbitrary T
 ## 2.1 Primary Accent
 
 ```text
-#5E6AD2
+#DDE1E5
 ```
 
-Soft Indigo is the primary IssueForge accent color.
+Light Platinum / Silver (`#DDE1E5`) is the primary IssueForge accent color.
 
 Use it sparingly for:
 
-* Focus indicators
-* Selected states
-* Important links
-* Feature-specific highlights
+* Active navigation highlights & badges
+* Selected indicators & focus rings
+* Intentional interactive emphasis
 
-The accent should be used intentionally and rarely — it is not the color of everyday buttons or controls.
+**Important Contrast Rule:** Whenever `#DDE1E5` is used as a background or hover highlight fill (e.g., `bg-[#DDE1E5]` or `hover:bg-[#DDE1E5]`), the text color **must be black** (`text-black` / `#000000`) so that white text is never hidden against the light accent background.
 
-Do not apply `#5E6AD2` to every button, card, border, or decorative element. Everyday interactive controls (primary buttons, active navigation, active toggles) should use the neutral gray system described below, not the accent.
+**Strict Prohibition of Purple and Indigo:** There is strictly **no use of purple or indigo color** anywhere in the application (including buttons, borders, highlights, or icons).
 
-The accent should establish rare moments of emphasis without making the interface feel purple.
+The accent should be used intentionally and rarely — it is not the color of everyday buttons or controls. Everyday interactive controls (primary buttons, active navigation, active toggles) should use the neutral gray system described below, not arbitrary bright fills.
 
 ---
 
@@ -238,7 +238,7 @@ The general color hierarchy should follow:
                   Primary Text
                        ↑
                        |
-#5E6AD2 ←──── Rare Accent / Focus
+#DDE1E5 ←──── Rare Accent / Focus (paired with text-black on fills)
                        |
                        ↓
                   #94A3B8
@@ -273,14 +273,14 @@ The top navbar and left sidebar use dedicated near-black/gray shades that sit be
 | Top Navbar                  | `#000000` | Pure black, matching the canvas; anchors search, notifications, and profile.    |
 | Left Sidebar                | `#000000` | Pure black, matching the canvas, separated primarily by a 1px border.           |
 | Active Nav Item (BG)         | `#27272A` | Active item background fill (e.g., current project or tab) — neutral gray.      |
-| Active Nav Item (Accent)     | `#5E6AD2` | Soft Indigo, used sparingly for icon/text or a 2px left border strip.           |
+| Active Nav Item (Accent)     | `#DDE1E5` | Light Platinum accent, used for active indicator, badge, or text/icon highlight. |
 | Hover Nav Item (BG)          | `#18181B` | Subtle gray hover effect for inactive nav items.                                |
 | Dividers & Borders           | `#27272A` | 1px solid border separating sidebar/navbar from the canvas.                     |
 
 Usage notes:
 
 * The top navbar and sidebar should match the pitch-black `#000000` app background, with structure communicated through subtle `#27272A` borders rather than a distinct background shade.
-* Active nav items should primarily use `#27272A` as the background fill. The `#5E6AD2` accent should be reserved for rare emphasis (icon/text color or a 2px left-border accent strip) — not applied at full strength across the whole active state.
+* Active nav items should primarily use `#27272A` as the background fill. The `#DDE1E5` accent should be reserved for rare emphasis (active icon/text indicator, count badge, or border highlight) — never use purple or indigo. If `#DDE1E5` is ever used as a fill or hover background, foreground text must be black (`text-black`).
 * Hover states (`#18181B`) should only apply to inactive items; the active item's state should not change on hover.
 * Use `#27272A` for the 1px border separating the navbar/sidebar from the main canvas, consistent with the broader restrained border system in Section 12.
 
@@ -338,24 +338,28 @@ for secondary application text instead of creating arbitrary gray values.
 
 # 4. Accent and Semantic Colors
 
-`#5E6AD2` is the primary IssueForge accent, used rarely and intentionally.
+`#DDE1E5` is the primary IssueForge accent, used rarely and intentionally.
 
-Use it for focus and rare emphasis rather than everyday interaction or decoration.
+Use it for focus indicators, active selection markers, and intentional highlights.
+
+**Text Contrast Rule:** Whenever `#DDE1E5` is used as a background or hover state (such as `bg-[#DDE1E5]` or `hover:bg-[#DDE1E5]`), the foreground text **must be black** (`text-black` / `#000000`) so that white text does not hide against the light background.
 
 Examples:
 
 ```text
-Focused input
-    → #5E6AD2
+Focused input ring
+    → #DDE1E5
 
-Selected item
-    → #5E6AD2
+Selected / Active item indicator
+    → #DDE1E5 (text-black on fill)
 
-Important link
-    → #5E6AD2
+Important link / highlight
+    → #DDE1E5
 ```
 
-The accent should not automatically be used for every primary CTA or active state — everyday interactive elements (buttons, active tabs, active nav items) should default to the neutral gray system (`#27272A` / `#18181B`), reserving `#5E6AD2` for a small number of intentional highlights.
+The accent should not automatically be used for every primary CTA or active state — everyday interactive elements (buttons, active tabs, active nav items) should default to the neutral gray system (`#27272A` / `#18181B`), reserving `#DDE1E5` for clear intentional highlights.
+
+**Strict Prohibition of Purple and Indigo:** There is strictly **no use of purple or indigo color** anywhere in the system.
 
 The authentication screen currently uses a high-contrast white primary CTA. This legacy pattern may continue on authentication screens where strong contrast is more appropriate; new application screens should use the gray primary CTA described in Section 5.
 
@@ -393,31 +397,21 @@ text-red-200
 
 ---
 
-## 4.2 Legacy Authentication Colors
+## 4.2 Legacy Color Deprecation and No-Purple Rule
 
-The existing authentication screen may contain older colors such as:
+Any legacy purple or indigo values (such as `#04020E`, `#5E6AD2`, `#6366F1`, `#818CF8`, `#8D6FE8`, `#9A7EF0`) are **strictly deprecated and forbidden**.
 
-```text
-#04020E
-#8D6FE8
-#9A7EF0
-```
-
-These are considered **legacy visual references**, not the primary application palette.
-
-When modifying existing authentication screens, preserve their established visual identity unless the task explicitly requires migration to the new palette.
-
-For all **new application features**, use the current IssueForge palette:
+For all application features and screens, use the active IssueForge palette:
 
 ```text
-#5E6AD2
-#000000
-#18181B
-#E2E8F0
-#94A3B8
+#DDE1E5 (Primary Accent)
+#000000 (App Background)
+#18181B (Surface Background)
+#E2E8F0 (Primary Text)
+#94A3B8 (Secondary Text)
 ```
 
-Do not mix the legacy purple and background values into new application screens without a specific design reason.
+Never introduce or mix purple or indigo colors into the application.
 
 ---
 
@@ -673,6 +667,13 @@ Use shadows only when they improve hierarchy, such as:
 Avoid excessive glow effects.
 
 The authentication hero image may use stronger visual treatment, but normal application components should remain subtle.
+
+---
+
+## 14.1 Gradients Policy
+
+* **Real System / In-App UI: Strictly No Gradients.** All real system screens and components (including dashboard, workspaces, projects, issues, archive, profile, settings, navigation bars, sidebars, cards, and dialogs) must strictly use solid, flat colors (`#000000`, `#18181B`, `#27272A`, `#DDE1E5`). **No gradient of any color is permitted in the real system.**
+* **Landing / Marketing Pages Exception:** Subtle gradients are permissible exclusively on public landing or marketing pages (e.g., subtle dark neutral photographic overlays or vignette fades for depth). However, **even on landing pages, gradients in purple or indigo colors are strictly forbidden.**
 
 ---
 
@@ -966,7 +967,7 @@ translucent white surfaces
 +
 dark photographic hero
 +
-minimal purple undertones
+neutral monochrome undertones
 ```
 
 The desktop registration layout consists of:
@@ -1009,7 +1010,7 @@ When using an image:
 * Avoid overly bright imagery
 * Maintain the dark IssueForge aesthetic
 
-The current registration screen uses a dark gradient overlay to ensure readable white text.
+The registration screen may use a dark neutral overlay to ensure readable white text (never use purple or indigo overlays).
 
 Do not add hero imagery to normal CRUD/application screens simply for decoration.
 
@@ -1025,7 +1026,7 @@ Preferred active-state techniques:
 
 * Slight gray background (`#27272A`)
 * Increased text contrast
-* Rare purple accent
+* Rare `#DDE1E5` accent (paired with black text on fills)
 * Small indicator
 
 Avoid extremely bright active states.
@@ -1276,13 +1277,13 @@ The goal is for every screen to feel like it belongs to **the same application**
 When implementing a new screen or component:
 
 1. Inspect existing screens before designing.
-2. Treat the existing authentication screen as a visual reference, but note it uses the legacy palette (`#04020E`, `#8D6FE8`, `#9A7EF0`) — do not carry those specific values into new application screens.
+2. Purple and indigo shades are strictly forbidden across the entire product.
 3. Use `#000000` (pitch black) as the primary application background for new application screens.
 4. Use a neutral gray (`bg-zinc-800` / `#27272A`, white text) as the default primary CTA for new application screens, rather than a stark white button, unless the feature has a specific reason to use another treatment.
-5. Use the `#5E6AD2` accent sparingly and rarely, for focus and intentional emphasis rather than everyday interaction or decoration.
+5. Use `#DDE1E5` as the primary accent sparingly and rarely for focus indicators and intentional highlights. Whenever `#DDE1E5` is used as a background or hover highlight, the text must be black (`text-black` / `#000000`). Strictly no purple or indigo.
 6. Use `#E2E8F0` (primary text) and `#94A3B8` (secondary text) for text hierarchy; reserve white opacity values (`white/5`–`white/20`) for subtle borders, hover states, and other transient treatments.
 7. Use subtle borders instead of heavy containers.
-8. Avoid excessive shadows and gradients.
+8. Strictly no gradients of any color in the real system (landing pages may only use neutral dark gradients, never purple or indigo). Avoid excessive shadows.
 9. Use small/moderate corner radii.
 10. Reuse existing shadcn/ui primitives.
 11. Do not place application components in `components/ui/`.

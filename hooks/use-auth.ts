@@ -15,6 +15,17 @@ function readStorageToken(key: "accessToken" | "access_token" | "refreshToken" |
   return window.localStorage.getItem(key)
 }
 
+function setCookie(name: string, value: string, days: number = 7) {
+  if (typeof document === "undefined") return
+  const maxAge = days * 24 * 60 * 60
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax`
+}
+
+function deleteCookie(name: string) {
+  if (typeof document === "undefined") return
+  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`
+}
+
 export function useAuth() {
   const [tokens, setTokens] = useState<AuthTokens>({
     accessToken: null,
@@ -28,6 +39,15 @@ export function useAuth() {
 
     const accessToken = readStorageToken("accessToken") ?? readStorageToken("access_token")
     const refreshToken = readStorageToken("refreshToken") ?? readStorageToken("refresh_token")
+
+    if (accessToken) {
+      setCookie("accessToken", accessToken, 7)
+      setCookie("access_token", accessToken, 7)
+    }
+    if (refreshToken) {
+      setCookie("refreshToken", refreshToken, 30)
+      setCookie("refresh_token", refreshToken, 30)
+    }
 
     const nextTokens = {
       accessToken,
@@ -49,11 +69,15 @@ export function useAuth() {
     if (accessToken) {
       window.localStorage.setItem("accessToken", accessToken)
       window.localStorage.setItem("access_token", accessToken)
+      setCookie("accessToken", accessToken, 7)
+      setCookie("access_token", accessToken, 7)
     }
 
     if (refreshToken) {
       window.localStorage.setItem("refreshToken", refreshToken)
       window.localStorage.setItem("refresh_token", refreshToken)
+      setCookie("refreshToken", refreshToken, 30)
+      setCookie("refresh_token", refreshToken, 30)
     }
 
     setTokens({
@@ -71,6 +95,10 @@ export function useAuth() {
     window.localStorage.removeItem("access_token")
     window.localStorage.removeItem("refreshToken")
     window.localStorage.removeItem("refresh_token")
+    deleteCookie("accessToken")
+    deleteCookie("access_token")
+    deleteCookie("refreshToken")
+    deleteCookie("refresh_token")
     setTokens({ accessToken: null, refreshToken: null })
   }, [])
 

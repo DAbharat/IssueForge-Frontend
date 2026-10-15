@@ -44,9 +44,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("resize", updateViewport)
   }, [])
 
-  const isAuthRoute = pathname === "/login" || pathname === "/register"
+  const isPublicRoute = pathname === "/" || pathname === "/login" || pathname === "/register"
 
-  if (isAuthRoute) {
+  if (isPublicRoute) {
     return <>{children}</>
   }
 
