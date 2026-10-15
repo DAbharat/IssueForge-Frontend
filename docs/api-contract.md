@@ -326,6 +326,14 @@ Auth required: Yes
 
 Response (200 OK): project object
 
+### 18b) POST /api/projects/{projectID}/restore
+Auth required: Yes
+
+Used to restore a deleted project. Parent workspace must not be deleted.
+
+Response (200 OK): project object
+
+
 ### 19) GET /api/workspaces/{workspaceID}/projects
 Auth required: Yes
 
@@ -834,7 +842,57 @@ Response (200 OK): attachment deletion result
 
 ---
 
+## Archive endpoints
+
+### 65) GET /api/archive/counts
+Auth required: Yes
+
+Response (200 OK):
+```json
+{
+  "workspaces": 2,
+  "projects": 3,
+  "issues": 7,
+  "attachments": 1
+}
+```
+
+### 66) GET /api/archive/workspaces?search=
+Auth required: Yes
+
+Query params:
+- `search` (string, optional)
+
+Response (200 OK): array of archived workspace objects (`id`, `name`, `created_at`, `updated_at`, `deleted_at`)
+
+### 67) GET /api/archive/projects?search=
+Auth required: Yes
+
+Query params:
+- `search` (string, optional)
+
+Response (200 OK): array of archived project objects (`id`, `workspace_id`, `workspace_name`, `lead_id`, `lead_name`, `name`, `description`, `created_at`, `updated_at`, `deleted_at`)
+
+### 68) GET /api/archive/issues?search=
+Auth required: Yes
+
+Query params:
+- `search` (string, optional)
+
+Response (200 OK): array of archived issue objects (`id`, `project_id`, `project_name`, `workspace_id`, `workspace_name`, `created_by`, `creator_name`, `assigned_to`, `assignee_name`, `title`, `description`, `status`, `priority`, `created_at`, `updated_at`, `due_date`, `deleted_at`)
+
+### 69) GET /api/archive/attachments?search=
+Auth required: Yes
+
+Query params:
+- `search` (string, optional)
+
+Response (200 OK): array of archived attachment objects (`id`, `issue_id`, `issue_title`, `project_id`, `project_name`, `uploaded_by`, `uploader_name`, `original_name`, `resource_type`, `mime_type`, `file_size`, `public_url`, `created_at`, `deleted_at`)
+
+---
+
 ## Notes
+
 
 - All protected routes rely on the JWT token in the `Authorization` header.
 - The backend uses `gorilla/mux` path variables like `{issueID}`, `{workspaceID}`, `{projectID}`, etc.

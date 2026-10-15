@@ -52,7 +52,7 @@ export function useWorkspaceSwitcher() {
     }, [profile])
 
     const switchWorkspace = useCallback(
-        (workspace: WorkspaceOption) => {
+        (workspace: WorkspaceOption, tab: string = "General") => {
             try {
                 window.localStorage.setItem(ACTIVE_WORKSPACE_KEY, String(workspace.id))
                 // Keep legacy key in sync so other parts of the app that read
@@ -63,8 +63,8 @@ export function useWorkspaceSwitcher() {
             }
 
             setActiveWorkspace(workspace)
-            // Navigate to the workspace overview so the page context is correct
-            router.push("/workspace")
+            // Navigate to the workspace with target workspaceId and tab
+            router.push(`/workspace?workspaceId=${workspace.id}&tab=${tab}`)
         },
         [router]
     )

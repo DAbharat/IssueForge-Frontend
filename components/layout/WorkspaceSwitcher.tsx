@@ -126,7 +126,7 @@ export default function WorkspaceSwitcher({
 
                                         {/* Active check */}
                                         {isActive && (
-                                            <Check className="h-3.5 w-3.5 shrink-0 text-[#5E6AD2]" />
+                                            <Check className="h-3.5 w-3.5 shrink-0 text-[#DDE1E5]" />
                                         )}
                                     </button>
                                 </li>

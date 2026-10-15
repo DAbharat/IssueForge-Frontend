@@ -17,7 +17,8 @@ import IssueStatusAndPriority, {
     type IssueStatus,
 } from "@/components/issues/IssueStatusAndPriority"
 import IssueTabs, { type IssueTabKey } from "@/components/issues/IssueTabs"
-import { getIssueById, updateIssueDetails, updateIssuePriority, updateIssueStatus } from "@/services/issues.service"
+import { useRouter } from "next/navigation"
+import { getIssueById, updateIssueDetails, updateIssuePriority, updateIssueStatus, deleteIssue } from "@/services/issues.service"
 import { listIssueActivities } from "@/services/activities.service"
 import { getProjectById } from "@/services/projects.service"
 import { me } from "@/services/account.service"
@@ -107,6 +108,9 @@ export default function IssuePage({
     const [editTitle, setEditTitle] = useState("")
     const [editDescription, setEditDescription] = useState("")
     const [isSavingEdit, setIsSavingEdit] = useState(false)
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [isDeletingIssue, setIsDeletingIssue] = useState(false)
+    const router = useRouter()
 
     // ── Comments ──────────────────────────────────────────────────────────────
     const {
@@ -282,6 +286,19 @@ export default function IssuePage({
             setError(err instanceof Error ? err.message : "Unable to update issue details")
         } finally {
             setIsSavingEdit(false)
+        }
+    }
+
+    async function handleDeleteIssue() {
+        if (!issueID || !projectID) return
+        setIsDeletingIssue(true)
+        try {
+            await deleteIssue(issueID)
+            router.push(`/projects/${projectID}`)
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Unable to delete issue")
+            setIsDeletingIssue(false)
+            setIsDeleteDialogOpen(false)
         }
     }
 
@@ -510,13 +527,6 @@ export default function IssuePage({
                                     <div className="flex shrink-0 items-center gap-2">
                                         <button
                                             type="button"
-                                            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#27272A] bg-[#101012] text-[#A1A1AA] transition-colors hover:border-[#3F3F46] hover:text-[#E2E8F0]"
-                                        >
-                                            <span className="text-sm">•••</span>
-                                        </button>
-
-                                        <button
-                                            type="button"
                                             onClick={handleOpenEditDialog}
                                             disabled={!canEditDetails || isSavingEdit}
                                             title={canEditDetails ? "Edit issue details" : "Only the issue creator or project lead can edit this issue"}
@@ -524,6 +534,17 @@ export default function IssuePage({
                                         >
                                             {isSavingEdit ? "Saving…" : "Edit"}
                                         </button>
+
+                                        {canEditDetails && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsDeleteDialogOpen(true)}
+                                                disabled={isDeletingIssue}
+                                                className="inline-flex h-8 items-center rounded-md border border-[#27272A] bg-[#18181B] px-3 text-xs font-medium text-[#EF4444] transition-colors hover:border-[#EF4444]/50 hover:bg-[#EF4444]/10"
+                                            >
+                                                {isDeletingIssue ? "Deleting…" : "Delete"}
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 
@@ -720,6 +741,37 @@ export default function IssuePage({
                                         className="rounded-md border border-[#3F3F46] bg-[#27272A] px-3 py-2 text-xs font-medium text-[#E2E8F0] transition-colors hover:bg-[#3F3F46] disabled:cursor-not-allowed disabled:opacity-40"
                                     >
                                         {isSavingEdit ? "Saving…" : "Save changes"}
+                                    </button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+
+                        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                            <DialogContent className="max-w-md border-[#27272A] bg-[#0E0E11] text-[#E2E8F0]">
+                                <DialogHeader>
+                                    <DialogTitle className="text-lg font-semibold text-[#E2E8F0]">
+                                        Delete issue #{issueID}?
+                                    </DialogTitle>
+                                    <DialogDescription className="text-sm text-[#94A3B8]">
+                                        This issue will be removed from the project and moved to the Archive. You can view and restore it anytime from the Archive page.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <DialogFooter className="mt-4 flex gap-2 sm:justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsDeleteDialogOpen(false)}
+                                        disabled={isDeletingIssue}
+                                        className="rounded-md border border-[#27272A] bg-[#18181B] px-3 py-1.5 text-xs font-medium text-[#E2E8F0] hover:border-[#3F3F46]"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleDeleteIssue}
+                                        disabled={isDeletingIssue}
+                                        className="rounded-md border border-[#EF4444]/40 bg-[#EF4444]/20 px-3 py-1.5 text-xs font-medium text-[#EF4444] hover:bg-[#EF4444]/30"
+                                    >
+                                        {isDeletingIssue ? "Deleting…" : "Delete issue"}
                                     </button>
                                 </DialogFooter>
                             </DialogContent>

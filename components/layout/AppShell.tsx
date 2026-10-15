@@ -1,7 +1,7 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import Navbar from "@/components/layout/Navbar"
@@ -53,11 +53,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen w-full bg-[#000000] text-[#E2E8F0]">
       {!isMobile && (
-        <AppSidebar
-          collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed((prev) => !prev)}
-          workspaces={profile?.workspaces ?? []}
-        />
+        <Suspense fallback={null}>
+          <AppSidebar
+            collapsed={sidebarCollapsed}
+            onToggle={() => setSidebarCollapsed((prev) => !prev)}
+            workspaces={profile?.workspaces ?? []}
+            activeWorkspaceId={activeWorkspace?.id}
+            onWorkspaceSelect={switchWorkspace}
+          />
+        </Suspense>
       )}
 
       {isMobile && (
@@ -70,14 +74,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             onClick={() => setMobileSidebarOpen(false)}
           />
 
-          <AppSidebar
-            collapsed={false}
-            onToggle={() => setMobileSidebarOpen((prev) => !prev)}
-            mobile
-            isOpen={mobileSidebarOpen}
-            onClose={() => setMobileSidebarOpen(false)}
-            workspaces={profile?.workspaces ?? []}
-          />
+          <Suspense fallback={null}>
+            <AppSidebar
+              collapsed={false}
+              onToggle={() => setMobileSidebarOpen((prev) => !prev)}
+              mobile
+              isOpen={mobileSidebarOpen}
+              onClose={() => setMobileSidebarOpen(false)}
+              workspaces={profile?.workspaces ?? []}
+              activeWorkspaceId={activeWorkspace?.id}
+              onWorkspaceSelect={switchWorkspace}
+            />
+          </Suspense>
         </>
       )}
 

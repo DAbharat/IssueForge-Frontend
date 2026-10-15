@@ -110,7 +110,7 @@ export default function WorkspaceMembersOverview({
                   </td>
                   <td className="px-5 py-3">
                     <span className={`inline-flex rounded-md px-2 py-1 text-[11px] font-medium ${
-                      member.role?.toLowerCase() === 'owner' ? 'bg-[#6366F1]/10 text-[#818CF8]' :
+                      member.role?.toLowerCase() === 'owner' ? 'bg-[#DDE1E5]/10 text-[#DDE1E5]' :
                       member.role?.toLowerCase() === 'admin' ? 'bg-green-500/10 text-green-500' :
                       'bg-[#27272A] text-[#E2E8F0]'
                     }`}>
@@ -149,7 +149,7 @@ export default function WorkspaceMembersOverview({
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {/* Owner Box */}
           <div className="rounded-xl border border-[#27272A] bg-[#0E0E11] p-5">
-            <div className="mb-4 inline-flex rounded-md bg-[#6366F1]/10 px-2.5 py-1 text-[11px] font-medium text-[#818CF8]">
+            <div className="mb-4 inline-flex rounded-md bg-[#DDE1E5]/10 px-2.5 py-1 text-[11px] font-medium text-[#DDE1E5]">
               Owner
             </div>
             <ul className="space-y-3 text-sm text-[#E2E8F0]">

@@ -82,7 +82,7 @@ function FieldRow<T extends string>({
       >
         <SelectTrigger
           className={[
-            "h-8 w-auto min-w-33 gap-2 border-[#27272A] bg-[#18181B] text-xs font-medium text-[#E2E8F0] focus:ring-[#5E6AD2]/40",
+            "h-8 w-auto min-w-33 gap-2 border-[#27272A] bg-[#18181B] text-xs font-medium text-[#E2E8F0] focus:ring-[#DDE1E5]/40",
             disabled
               ? "cursor-not-allowed opacity-50"
               : "hover:border-[#3F3F46]",
@@ -165,7 +165,7 @@ export default function IssueStatusAndPriority({
 
         <StaticRow label="Assignee">
           <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-            {/* <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#5E6AD2] text-[10px] font-medium text-[#E2E8F0]">
+            {/* <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#DDE1E5] text-[10px] font-medium text-black">
               {assignee.initials}
             </span> */}
             <div className="min-w-0 flex-1 text-right">
@@ -186,7 +186,7 @@ export default function IssueStatusAndPriority({
 
         <StaticRow label="Project">
           <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-            {/* <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm bg-[#5E6AD2] text-[9px] font-semibold text-[#E2E8F0]">
+            {/* <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm bg-[#DDE1E5] text-[9px] font-semibold text-black">
               {project.initials}
             </span> */}
             <span className="truncate text-xs text-[#E2E8F0]">

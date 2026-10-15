@@ -334,7 +334,7 @@ export default function IssueDetails({
                       isAssigned
                         ? "cursor-not-allowed border-[#27272A] bg-[#18181B] text-[#52525B]"
                         : isSelected
-                          ? "border-[#5E6AD2] bg-[#5E6AD2]/15 text-[#E2E8F0]"
+                          ? "border-[#DDE1E5] bg-[#DDE1E5]/15 text-[#E2E8F0]"
                           : "border-[#27272A] bg-[#18181B] text-[#D4D4D8] hover:border-[#3F3F46]",
                     ].join(" ")}
                   >

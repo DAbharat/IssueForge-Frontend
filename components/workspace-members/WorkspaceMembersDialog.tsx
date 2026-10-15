@@ -90,7 +90,7 @@ function MemberRowMenu({ member, isAlreadyAdmin, onPromoteClick, onRemoveClick }
                 : "text-[#A1A1AA] hover:bg-[#18181B] hover:text-[#E2E8F0]",
             ].join(" ")}
           >
-            <ShieldCheck className={["h-3.5 w-3.5", isAlreadyAdmin ? "text-[#3F3F46]" : "text-[#5E6AD2]"].join(" ")} />
+            <ShieldCheck className={["h-3.5 w-3.5", isAlreadyAdmin ? "text-[#3F3F46]" : "text-[#DDE1E5]"].join(" ")} />
             Promote to Admin
             {isAlreadyAdmin && (
               <span className="ml-auto text-[9px] text-[#3F3F46]">Already admin</span>
@@ -168,7 +168,7 @@ function ConfirmDialog({
               "inline-flex items-center justify-center rounded-md px-4 py-2 text-xs font-semibold transition-colors disabled:opacity-50",
               confirmVariant === "danger"
                 ? "bg-red-600 text-white hover:bg-red-700"
-                : "bg-[#5E6AD2] text-white hover:bg-[#4F5BBF]",
+                : "bg-[#DDE1E5] text-black hover:bg-[#DDE1E5]/90 hover:text-black",
             ].join(" ")}
           >
             {isLoading ? "Please wait…" : confirmLabel}
@@ -275,7 +275,7 @@ export default function WorkspaceMembersDialog({
           >
             {isLoading ? (
               <div className="flex flex-col items-center justify-center gap-2 py-12">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#27272A] border-t-[#5E6AD2]" />
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#27272A] border-t-[#DDE1E5]" />
                 <p className="text-xs text-[#52525B]">Loading members…</p>
               </div>
             ) : filtered.length === 0 ? (
@@ -322,7 +322,7 @@ export default function WorkspaceMembersDialog({
                             className={[
                               "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
                               isElevated
-                                ? "border border-[#5E6AD2]/40 bg-[#5E6AD2]/10 text-[#818CF8]"
+                                ? "border border-[#DDE1E5]/40 bg-[#DDE1E5]/10 text-[#DDE1E5]"
                                 : "border border-[#27272A] bg-transparent text-[#52525B]",
                             ].join(" ")}
                           >

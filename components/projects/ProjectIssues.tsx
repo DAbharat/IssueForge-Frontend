@@ -171,7 +171,7 @@ export default function ProjectIssues({
       {/* ── Header: title left, Create Issue right ── */}
       {/* <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-base font-semibold tracking-[-0.01em] text-[#E2E8F0]">
-          Issues of <span className="text-[#5E6AD2]">{projectName}</span>
+          Issues of <span className="text-[#DDE1E5]">{projectName}</span>
         </h2>
 
         <button
@@ -193,7 +193,7 @@ export default function ProjectIssues({
             value={searchValue}
             placeholder="Search issues..."
             onChange={(e) => handleSearch(e.target.value)}
-            className="h-9 w-full rounded-md border border-[#27272A] bg-[#18181B] pl-8 pr-3 text-xs text-[#E2E8F0] placeholder:text-[#94A3B8]/70 focus:border-[#5E6AD2]/60 focus:outline-none"
+            className="h-9 w-full rounded-md border border-[#27272A] bg-[#18181B] pl-8 pr-3 text-xs text-[#E2E8F0] placeholder:text-[#94A3B8]/70 focus:border-[#DDE1E5]/60 focus:outline-none"
           />
         </div>
 

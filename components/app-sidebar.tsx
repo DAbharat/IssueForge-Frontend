@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  Archive,
   Briefcase,
   ChevronDown,
   ChevronLeft,
@@ -11,23 +12,25 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { useState, type ReactNode } from "react"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
-type SidebarWorkspace = {
-  id?: string | number
-  name?: string
+export type SidebarWorkspace = {
+  id: string | number
+  name: string
   role?: string
 }
 
-type AppSidebarProps = {
+export type AppSidebarProps = {
   collapsed: boolean
   onToggle: () => void
   mobile?: boolean
   isOpen?: boolean
   onClose?: () => void
   workspaces?: SidebarWorkspace[]
+  activeWorkspaceId?: string | number
+  onWorkspaceSelect?: (workspace: SidebarWorkspace) => void
 }
 
 /* ───────────────────────── shared styles ───────────────────────── */
@@ -94,9 +97,9 @@ function SidebarLink({
       ].join(" ")}
     >
       {active && (
-        <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-[#5E6AD2]" />
+        <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-[#DDE1E5]" />
       )}
-      <Icon className={["h-4 w-4 shrink-0", active ? "text-[#5E6AD2]" : "text-[#94A3B8]"].join(" ")} />
+      <Icon className={["h-4 w-4 shrink-0", active ? "text-[#DDE1E5]" : "text-[#94A3B8]"].join(" ")} />
       {!collapsed && <span className="text-[15px] font-medium">{label}</span>}
     </button>
   )
@@ -107,6 +110,7 @@ function SidebarSection({
   label,
   collapsed,
   open,
+  active = false,
   onOpenChange,
   onExpandSidebar,
   children,
@@ -115,6 +119,7 @@ function SidebarSection({
   label: string
   collapsed: boolean
   open: boolean
+  active?: boolean
   onOpenChange: (open: boolean) => void
   onExpandSidebar: () => void
   children: ReactNode
@@ -140,20 +145,25 @@ function SidebarSection({
         }}
         className={[
           ROW_BASE,
-          ROW_IDLE,
+          active && collapsed ? "bg-[#27272A] text-[#E2E8F0]" : ROW_IDLE,
           "data-[state=open]:text-[#E2E8F0]",
           collapsed ? "justify-center" : "gap-3 px-3",
         ].join(" ")}
       >
+        {active && collapsed && (
+          <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-[#DDE1E5]" />
+        )}
         <Icon
           className={[
             "h-4 w-4 shrink-0 transition-colors",
-            isOpen ? "text-[#E2E8F0]" : "text-[#94A3B8]",
+            active ? "text-[#DDE1E5]" : isOpen ? "text-[#E2E8F0]" : "text-[#94A3B8]",
           ].join(" ")}
         />
         {!collapsed && (
           <>
-            <span className="flex-1 text-[15px] font-medium">{label}</span>
+            <span className={["flex-1 text-[15px] font-medium", active ? "text-[#E2E8F0]" : ""].join(" ")}>
+              {label}
+            </span>
             <ChevronDown
               className={[
                 "h-4 w-4 shrink-0 transition-transform duration-200",
@@ -178,19 +188,64 @@ export function AppSidebar({
   isOpen = true,
   onClose,
   workspaces = [],
+  activeWorkspaceId,
+  onWorkspaceSelect,
 }: AppSidebarProps) {
-  const [projectsOpen, setProjectsOpen] = useState(false)
-  const [workspacesOpen, setWorkspacesOpen] = useState(false)
-  const [myWorkspacesOpen, setMyWorkspacesOpen] = useState(false)
-
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  const currentTab = searchParams?.get("tab")
+
+  const isOverviewActive = pathname === "/overview" || pathname === "/"
+  const isArchiveActive = pathname === "/archive"
+  const isSettingsActive = pathname === "/profile"
+
+  const isProjectsTabActive = pathname === "/workspace" && currentTab === "Projects"
+  const isProjectsSectionActive = pathname.startsWith("/projects") || isProjectsTabActive
+
+  const isInvitesTabActive = pathname === "/workspace" && currentTab === "Invitations"
+  const isWorkspacesSectionActive =
+    pathname === "/workspace" &&
+    (!currentTab || currentTab === "General" || currentTab === "Members" || currentTab === "Danger Zone" || isInvitesTabActive)
+
+  const [projectsOpen, setProjectsOpen] = useState(true)
+  const [workspacesOpen, setWorkspacesOpen] = useState(true)
+  const [myWorkspacesOpen, setMyWorkspacesOpen] = useState(true)
 
   // The mobile drawer is always fully expanded.
   const collapsed = collapsedProp && !mobile
 
+  const handleNavigate = (url: string) => {
+    router.push(url)
+    if (mobile) onClose?.()
+  }
+
+  const handleWorkspaceItemClick = (workspace: SidebarWorkspace) => {
+    if (!workspace.id) return
+    if (onWorkspaceSelect && workspace.name) {
+      onWorkspaceSelect(workspace)
+    } else {
+      try {
+        window.localStorage.setItem("activeWorkspaceId", String(workspace.id))
+        if (workspace.name) window.localStorage.setItem("workspaceName", workspace.name)
+      } catch {
+        // ignore storage errors
+      }
+      router.push(`/workspace?workspaceId=${workspace.id}&tab=General`)
+    }
+    if (mobile) onClose?.()
+  }
+
   const content = (
     <nav className="space-y-1 p-3">
-      <SidebarLink icon={LayoutGrid} label="Overview" collapsed={collapsed} active />
+      <SidebarLink
+        icon={LayoutGrid}
+        label="Overview"
+        collapsed={collapsed}
+        active={isOverviewActive}
+        onClick={() => handleNavigate("/overview")}
+      />
 
       {/* ── Projects ── */}
       <SidebarSection
@@ -198,14 +253,31 @@ export function AppSidebar({
         label="Projects"
         collapsed={collapsed}
         open={projectsOpen}
+        active={isProjectsSectionActive}
         onOpenChange={setProjectsOpen}
         onExpandSidebar={onToggle}
       >
         {/* ml-5 (20px) puts the guide line under the centre of the 16px icon */}
         <TreeList className="ml-5 mr-2">
           <TreeNode last>
-            <button type="button" className={SUB_ROW}>
-              My projects
+            <button
+              type="button"
+              onClick={() => {
+                const targetWsId = activeWorkspaceId ?? (workspaces.length > 0 ? workspaces[0]?.id : undefined)
+                const targetUrl = targetWsId
+                  ? `/workspace?workspaceId=${targetWsId}&tab=Projects`
+                  : `/workspace?tab=Projects`
+                handleNavigate(targetUrl)
+              }}
+              className={[
+                SUB_ROW,
+                isProjectsTabActive ? "bg-[#27272A] font-medium text-[#E2E8F0]" : "",
+              ].join(" ")}
+            >
+              <span className="truncate">My projects</span>
+              {isProjectsTabActive && (
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#DDE1E5]" />
+              )}
             </button>
           </TreeNode>
         </TreeList>
@@ -217,13 +289,30 @@ export function AppSidebar({
         label="Workspaces"
         collapsed={collapsed}
         open={workspacesOpen}
+        active={isWorkspacesSectionActive}
         onOpenChange={setWorkspacesOpen}
         onExpandSidebar={onToggle}
       >
         <TreeList className="ml-5 mr-2">
           <TreeNode>
-            <button type="button" className={SUB_ROW}>
-              Invites
+            <button
+              type="button"
+              onClick={() => {
+                const targetWsId = activeWorkspaceId ?? (workspaces.length > 0 ? workspaces[0]?.id : undefined)
+                const targetUrl = targetWsId
+                  ? `/workspace?workspaceId=${targetWsId}&tab=Invitations`
+                  : `/workspace?tab=Invitations`
+                handleNavigate(targetUrl)
+              }}
+              className={[
+                SUB_ROW,
+                isInvitesTabActive ? "bg-[#27272A] font-medium text-[#E2E8F0]" : "",
+              ].join(" ")}
+            >
+              <span className="truncate">Invites</span>
+              {isInvitesTabActive && (
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#DDE1E5]" />
+              )}
             </button>
           </TreeNode>
 
@@ -252,6 +341,12 @@ export function AppSidebar({
                   ) : (
                     workspaces.map((workspace, index) => {
                       const name = workspace.name || "Workspace"
+                      const isCurrentWs =
+                        pathname === "/workspace" &&
+                        (!currentTab || currentTab === "General") &&
+                        activeWorkspaceId !== undefined &&
+                        String(workspace.id) === String(activeWorkspaceId)
+
                       return (
                         <TreeNode
                           key={workspace.id ?? `${name}-${index}`}
@@ -259,14 +354,21 @@ export function AppSidebar({
                         >
                           <button
                             type="button"
-                            onClick={() => {
-                              router.push("/workspace")
-                              if (mobile) onClose?.()
-                            }}
-                            className={SUB_ROW}
+                            onClick={() => handleWorkspaceItemClick(workspace)}
+                            className={[
+                              SUB_ROW,
+                              isCurrentWs ? "bg-[#27272A] font-medium text-[#E2E8F0]" : "",
+                            ].join(" ")}
                           >
                             <span className="flex min-w-0 items-center gap-2">
-                              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[#27272A] text-[10px] font-semibold uppercase text-[#E2E8F0]">
+                              <span
+                                className={[
+                                  "flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] font-semibold uppercase",
+                                  isCurrentWs
+                                    ? "bg-[#DDE1E5] text-black"
+                                    : "bg-[#27272A] text-[#E2E8F0]",
+                                ].join(" ")}
+                              >
                                 {name.charAt(0)}
                               </span>
                               <span className="truncate">{name}</span>
@@ -288,9 +390,23 @@ export function AppSidebar({
         </TreeList>
       </SidebarSection>
 
+      <SidebarLink
+        icon={Archive}
+        label="Archive"
+        collapsed={collapsed}
+        active={isArchiveActive}
+        onClick={() => handleNavigate("/archive")}
+      />
+
       <div className="my-2 border-t border-[#27272A]" />
 
-      <SidebarLink icon={Settings} label="Settings" collapsed={collapsed} />
+      <SidebarLink
+        icon={Settings}
+        label="Settings"
+        collapsed={collapsed}
+        active={isSettingsActive}
+        onClick={() => handleNavigate("/profile")}
+      />
     </nav>
   )
 

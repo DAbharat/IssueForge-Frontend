@@ -379,7 +379,7 @@ export default function Navbar({
                         >
                             {isLoading ? (
                                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#27272A] border-t-[#5E6AD2]" />
+                                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#27272A] border-t-[#DDE1E5]" />
                                     <p className="mt-3 text-xs text-[#94A3B8]">Searching users…</p>
                                 </div>
                             ) : !hasSearched && results.length === 0 ? (

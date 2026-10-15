@@ -270,10 +270,10 @@ export default function ProfileCard({
                 onClick={handleInvite}
                 disabled={isInviting}
                 aria-label={tooltipLabel}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#27272A] bg-[#18181B] text-[#94A3B8] transition-colors hover:border-[#3F3F46] hover:bg-[#27272A] hover:text-[#E2E8F0] focus:outline-none focus:ring-1 focus:ring-[#5E6AD2] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#27272A] bg-[#18181B] text-[#94A3B8] transition-colors hover:border-[#3F3F46] hover:bg-[#27272A] hover:text-[#E2E8F0] focus:outline-none focus:ring-1 focus:ring-[#DDE1E5] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isInviting ? (
-                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#27272A] border-t-[#5E6AD2]" />
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#27272A] border-t-[#DDE1E5]" />
                 ) : (
                   <UserPlus className="h-4 w-4" />
                 )}

@@ -6,11 +6,15 @@ import { useState } from "react"
 import ProfileHeader from "@/components/profile/ProfileHeader"
 import ProfileTabs, { type ProfileTabKey } from "@/components/profile/ProfileTabs"
 import WorkspaceCard from "@/components/workspaces/WorkspaceCard"
+import ProfileProjectCard from "@/components/profile/ProfileProjectCard"
+import ProfileIssueCard from "@/components/profile/ProfileIssueCard"
 import { useProfile } from "@/hooks/use-profile"
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { profile, isLoading, error } = useProfile()
+  const { profile, projects, issues, isLoading, isLoadingDetails, error } = useProfile({
+    includeDetails: true,
+  })
   const [activeTab, setActiveTab] = useState<ProfileTabKey>("Workspaces")
 
   if (isLoading) {
@@ -35,20 +39,84 @@ export default function ProfilePage() {
 
   const displayName = profile.fullname || profile.username || "User"
   const workspaceItems = Array.isArray(profile.workspaces) ? profile.workspaces : []
+  const projectItems = Array.isArray(projects) ? projects : []
+  const issueItems = Array.isArray(issues) ? issues : []
 
   const renderTabContent = () => {
     if (activeTab === "Projects") {
+      if (isLoadingDetails) {
+        return (
+          <div className="mx-auto max-w-2xl rounded-md border border-[#27272A] bg-[#18181B] p-6 text-center text-sm text-[#94A3B8]">
+            Loading projects...
+          </div>
+        )
+      }
+
+      if (projectItems.length === 0) {
+        return (
+          <div className="rounded-sm border border-dashed border-[#27272A] bg-[#000000] p-6 text-sm text-[#94A3B8]">
+            No projects yet.
+          </div>
+        )
+      }
+
       return (
-        <div className="rounded-sm border border-dashed border-[#27272A] bg-[#000000] p-6 text-sm text-[#94A3B8]">
-          No projects yet.
+        <div className="mx-auto w-full max-w-2xl space-y-3 md:space-y-6">
+          {projectItems.map((project) => (
+            <ProfileProjectCard
+              key={String(project.id)}
+              id={project.id}
+              name={project.name}
+              leadName={project.lead_name}
+              workspaceName={project.workspace_name}
+              createdAt={project.created_at}
+              onClick={() => {
+                if (!project.id) return
+                router.push(`/projects/${encodeURIComponent(String(project.id))}`)
+              }}
+            />
+          ))}
         </div>
       )
     }
 
     if (activeTab === "Issues") {
+      if (isLoadingDetails) {
+        return (
+          <div className="mx-auto max-w-2xl rounded-md border border-[#27272A] bg-[#18181B] p-6 text-center text-sm text-[#94A3B8]">
+            Loading issues...
+          </div>
+        )
+      }
+
+      if (issueItems.length === 0) {
+        return (
+          <div className="rounded-sm border border-dashed border-[#27272A] bg-[#000000] p-6 text-sm text-[#94A3B8]">
+            No issues yet.
+          </div>
+        )
+      }
+
       return (
-        <div className="rounded-sm border border-dashed border-[#27272A] bg-[#000000] p-6 text-sm text-[#94A3B8]">
-          No issues yet.
+        <div className="mx-auto w-full max-w-2xl space-y-3 md:space-y-6">
+          {issueItems.map((issue) => (
+            <ProfileIssueCard
+              key={String(issue.id)}
+              id={issue.id}
+              title={issue.title}
+              workspaceName={issue.workspace_name}
+              labels={issue.labels}
+              createdAt={issue.created_at}
+              onClick={() => {
+                if (!issue.id) return
+                if (issue.project_id) {
+                  router.push(
+                    `/projects/${encodeURIComponent(String(issue.project_id))}/issues/${encodeURIComponent(String(issue.id))}`
+                  )
+                }
+              }}
+            />
+          ))}
         </div>
       )
     }

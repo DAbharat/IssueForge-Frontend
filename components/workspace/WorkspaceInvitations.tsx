@@ -275,7 +275,7 @@ export default function WorkspaceInvitations({
       {/* ── Content View ── */}
       {isLoading ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-[#27272A] bg-[#0E0E11] py-16 text-center">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#27272A] border-t-[#5E6AD2]" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#27272A] border-t-[#DDE1E5]" />
           <p className="mt-3 text-xs text-[#94A3B8]">Loading workspace invitations…</p>
         </div>
       ) : filter === "pending" ? (

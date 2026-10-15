@@ -50,7 +50,7 @@ export default function ProjectSettings({
   const [leadId, setLeadId] = useState(project.lead_id ? String(project.lead_id) : "")
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [labelName, setLabelName] = useState("")
-  const [labelColor, setLabelColor] = useState("#5E6AD2")
+  const [labelColor, setLabelColor] = useState("#DDE1E5")
   const [pendingLabelId, setPendingLabelId] = useState<string | number | null>(null)
 
   async function handleDetailsSubmit(event: FormEvent<HTMLFormElement>) {

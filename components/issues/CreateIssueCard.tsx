@@ -160,7 +160,7 @@ export default function CreateIssueCard({
               onValueChange={(v) => setAssigneeId(v ?? "unassigned")}
               disabled={isSubmitting}
             >
-              <SelectTrigger className="h-9 w-full border-[#27272A] bg-[#18181B] text-xs font-medium text-[#E2E8F0] hover:border-[#3F3F46] focus:ring-[#5E6AD2]/40">
+              <SelectTrigger className="h-9 w-full border-[#27272A] bg-[#18181B] text-xs font-medium text-[#E2E8F0] hover:border-[#3F3F46] focus:ring-[#DDE1E5]/40">
                 <SelectValue placeholder="Select member" />
               </SelectTrigger>
               <SelectContent className="border-[#27272A] bg-[#18181B]">
@@ -193,7 +193,7 @@ export default function CreateIssueCard({
               onValueChange={(v) => setPriority((v ?? "LOW") as Priority)}
               disabled={isSubmitting}
             >
-              <SelectTrigger className="h-9 w-full border-[#27272A] bg-[#18181B] text-xs font-medium text-[#E2E8F0] hover:border-[#3F3F46] focus:ring-[#5E6AD2]/40">
+              <SelectTrigger className="h-9 w-full border-[#27272A] bg-[#18181B] text-xs font-medium text-[#E2E8F0] hover:border-[#3F3F46] focus:ring-[#DDE1E5]/40">
                 <span className="flex items-center gap-2">
                   <span
                     className={`inline-block h-2 w-2 shrink-0 rounded-full ${PRIORITY_DOTS[priority]}`}
@@ -249,7 +249,7 @@ export default function CreateIssueCard({
                     className={[
                       "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                       selected
-                        ? "border-[#5E6AD2] bg-[#5E6AD2]/15 text-[#E2E8F0]"
+                        ? "border-[#DDE1E5] bg-[#DDE1E5]/15 text-[#E2E8F0]"
                         : "border-[#27272A] bg-transparent text-[#94A3B8] hover:border-[#3F3F46] hover:text-[#E2E8F0]",
                     ].join(" ")}
                   >

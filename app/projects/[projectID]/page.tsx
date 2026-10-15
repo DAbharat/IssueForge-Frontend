@@ -418,7 +418,7 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-[#27272A] border-t-[#5E6AD2]"></div>
+          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-[#27272A] border-t-[#DDE1E5]"></div>
           <p className="text-[#94A3B8]">Loading project...</p>
         </div>
       </div>

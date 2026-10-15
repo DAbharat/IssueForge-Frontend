@@ -2,7 +2,7 @@
 
 import { Search, SlidersHorizontal, Plus, Globe, Copy, MoreVertical, UserPlus, Trash2, ArrowRightLeft, ChevronDown } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 
 import {
   AlertDialog,
@@ -21,7 +21,7 @@ import WorkspaceMembersOverview, {
 } from "@/components/workspace-members/WorkspaceMembersOverview"
 import WorkspaceMembersDialog from "@/components/workspace-members/WorkspaceMembersDialog"
 import WorkspaceMembersCard from "@/components/workspace-members/WorkspaceMembersCard"
-import WorkspaceTabs, { type WorkspaceTabKey } from "@/components/workspace/WorkspaceTab"
+import WorkspaceTabs, { WORKSPACE_TABS, type WorkspaceTabKey } from "@/components/workspace/WorkspaceTab"
 import WorkspaceDetails from "@/components/workspace/WorkspaceDetails"
 import WorkspaceInvitations from "@/components/workspace/WorkspaceInvitations"
 import PendingWorkspaceInvitations from "@/components/workspace/PendingWorkspaceInvitations"
@@ -35,7 +35,7 @@ import { updateWorkspaceName, getWorkspaceById, deleteWorkspace, type Workspace 
 import { listProjectIssues } from "@/services/issues.service"
 import { listProjectMembers } from "@/services/projectMembers.service"
 
-export default function WorkspacePage() {
+function WorkspaceContent() {
   const searchParams = useSearchParams()
   const { profile, isLoading: profileLoading } = useProfile()
   const { activeWorkspace } = useWorkspaceSwitcher()
@@ -52,9 +52,30 @@ export default function WorkspacePage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeletingWorkspace, setIsDeletingWorkspace] = useState(false)
 
-  const [activeTab, setActiveTab] = useState<WorkspaceTabKey>("General")
+  const tabParam = searchParams.get("tab")
+  const [activeTab, setActiveTab] = useState<WorkspaceTabKey>(() => {
+    if (tabParam && (WORKSPACE_TABS as readonly string[]).includes(tabParam)) {
+      return tabParam as WorkspaceTabKey
+    }
+    return "General"
+  })
 
   const router = useRouter()
+
+  // Keep activeTab in sync with query parameter changes (from sidebar, navbar, etc.)
+  useEffect(() => {
+    const currentTabParam = searchParams.get("tab")
+    if (currentTabParam && (WORKSPACE_TABS as readonly string[]).includes(currentTabParam)) {
+      setActiveTab(currentTabParam as WorkspaceTabKey)
+    }
+  }, [searchParams])
+
+  const handleTabChange = (tab: WorkspaceTabKey) => {
+    setActiveTab(tab)
+    const currentWsId = workspaceId ?? searchParams.get("workspaceId")
+    const query = currentWsId ? `workspaceId=${currentWsId}&tab=${tab}` : `tab=${tab}`
+    router.replace(`/workspace?${query}`, { scroll: false })
+  }
 
   useEffect(() => {
     if (!profile?.workspaces || profile.workspaces.length === 0) return
@@ -329,7 +350,7 @@ export default function WorkspacePage() {
       </div>
 
       <div className="mb-4 mt-3">
-        <WorkspaceTabs activeTab={activeTab} onTabChange={setActiveTab} isAdmin={isAdmin} />
+        <WorkspaceTabs activeTab={activeTab} onTabChange={handleTabChange} isAdmin={isAdmin} />
       </div>
 
       <section className="space-y-3">
@@ -387,13 +408,13 @@ export default function WorkspacePage() {
 
                 {/* Transfer Action */}
                 <div className="flex items-start gap-3 rounded-lg border border-[#27272A] bg-[#09090B] p-4">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#6366F1]/10 text-[#818CF8]">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#DDE1E5]/10 text-[#DDE1E5]">
                     <ArrowRightLeft className="h-4 w-4" />
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-[#E2E8F0]">Transfer ownership</h3>
                     <p className="mt-0.5 text-xs text-[#94A3B8] leading-relaxed">Transfer ownership to another member of this workspace.</p>
-                    <button className="mt-3 rounded-md border border-[#6366F1]/30 bg-transparent px-4 py-1.5 text-xs font-medium text-[#818CF8] transition-colors hover:bg-[#6366F1]/10">
+                    <button className="mt-3 rounded-md border border-[#DDE1E5]/30 bg-transparent px-4 py-1.5 text-xs font-medium text-[#DDE1E5] transition-colors hover:bg-[#DDE1E5] hover:text-black">
                       Transfer ownership
                     </button>
                   </div>
@@ -663,5 +684,20 @@ export default function WorkspacePage() {
         />
       )}
     </div>
+  )
+}
+
+export default function WorkspacePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-6xl px-4 py-8 text-[#94A3B8]">
+          <div className="mb-4 h-8 w-48 animate-pulse rounded bg-[#18181B]" />
+          <div className="h-64 animate-pulse rounded-xl border border-[#27272A] bg-[#0E0E11]" />
+        </div>
+      }
+    >
+      <WorkspaceContent />
+    </Suspense>
   )
 }

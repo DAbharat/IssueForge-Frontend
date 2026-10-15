@@ -87,3 +87,13 @@ export async function listProjectsByLead(workspaceId: string | number) {
         throw new Error(getErrorMessage(error, "An error occurred while listing projects."));
     }
 }
+
+export async function restoreProject(projectId: string | number) {
+    try {
+        const response = await axiosClient.post<Project>(`/api/projects/${projectId}/restore`);
+        return response.data;
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "An error occurred while restoring the project."));
+    }
+}
+

@@ -66,8 +66,8 @@ export default function Login({
                             </p>
 
                             <div className="mt-8 flex items-center gap-2">
-                                <span className="h-1.5 w-8 rounded-full bg-[#5E6AD2]/60" />
-                                <span className="h-1.5 w-8 rounded-full bg-[#5E6AD2]/40" />
+                                <span className="h-1.5 w-8 rounded-full bg-[#DDE1E5]/60" />
+                                <span className="h-1.5 w-8 rounded-full bg-[#DDE1E5]/40" />
                                 <span className="h-1.5 w-8 rounded-full bg-[#E2E8F0]" />
                             </div>
                         </div>
@@ -96,7 +96,7 @@ export default function Login({
                                         value={email}
                                         onChange={(e) => onEmailChange(e.target.value)}
                                         placeholder="Email"
-                                        className="h-11 rounded-sm border-[#222631] bg-[#1A1D24] pl-11 text-[#E2E8F0] placeholder:text-[#94A3B8] focus-visible:border-[#5E6AD2] focus-visible:ring-[#5E6AD2]/30"
+                                        className="h-11 rounded-sm border-[#222631] bg-[#1A1D24] pl-11 text-[#E2E8F0] placeholder:text-[#94A3B8] focus-visible:border-[#DDE1E5] focus-visible:ring-[#DDE1E5]/30"
                                     />
                                 </div>
 
@@ -108,7 +108,7 @@ export default function Login({
                                         value={password}
                                         onChange={(e) => onPasswordChange(e.target.value)}
                                         placeholder="Enter your password"
-                                        className="h-11 rounded-sm border-[#222631] bg-[#1A1D24] pr-11 text-[#E2E8F0] placeholder:text-[#94A3B8] focus-visible:border-[#5E6AD2] focus-visible:ring-[#5E6AD2]/30"
+                                        className="h-11 rounded-sm border-[#222631] bg-[#1A1D24] pr-11 text-[#E2E8F0] placeholder:text-[#94A3B8] focus-visible:border-[#DDE1E5] focus-visible:ring-[#DDE1E5]/30"
                                     />
 
                                     <button

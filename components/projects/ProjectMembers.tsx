@@ -141,7 +141,7 @@ export default function ProjectMembers({
             {/* Role Badge */}
             <div className="shrink-0 text-right">
               <span className="text-[11px] font-medium text-[#71717A]">
-                <span className={member.role === "Lead" ? "text-[#5E6AD2]" : "text-[#94A3B8]"}>
+                <span className={member.role === "Lead" ? "text-[#DDE1E5]" : "text-[#94A3B8]"}>
                   {member.role}
                 </span>
               </span>
@@ -227,7 +227,7 @@ export default function ProjectMembers({
                       </p>
                     </div>
                     {isAddingMember && (
-                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#27272A] border-t-[#5E6AD2]" />
+                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#27272A] border-t-[#DDE1E5]" />
                     )}
                   </button>
                 ))
