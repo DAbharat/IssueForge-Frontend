@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { ChevronDown, Filter, Plus, Search, Check } from "lucide-react"
+import type { Label } from "@/services/labels.service"
 
 export type ProjectIssueItem = {
   id?: string | number
@@ -10,6 +11,7 @@ export type ProjectIssueItem = {
   status: "todo" | "in_progress" | "done"
   priority?: "low" | "medium" | "high"
   assignee?: string
+  labels?: Label[]
   createdAt?: string
 }
 
@@ -64,17 +66,26 @@ function IssueCard({
       </p>
 
       <div className="mt-3 flex w-full items-center justify-between">
-        {prio ? (
-          <div className="flex items-center gap-1.5">
-            <div className={`h-1.5 w-1.5 rounded-full ${prio.dot}`} />
-            <span className="text-[11px] font-medium text-[#94A3B8]">{prio.label}</span>
-          </div>
-        ) : (
-          <div />
-        )}
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          {issue.labels?.map((label) => (
+            <span
+              key={label.id}
+              className="max-w-28 truncate rounded-md border border-[#27272A] bg-[#101012] px-1.5 py-0.5 text-[10px] font-medium text-[#A1A1AA]"
+            >
+              {label.name}
+            </span>
+          ))}
+
+          {prio && (
+            <div className="flex items-center gap-1.5">
+              <div className={`h-1.5 w-1.5 rounded-full ${prio.dot}`} />
+              <span className="text-[11px] font-medium text-[#94A3B8]">{prio.label}</span>
+            </div>
+          )}
+        </div>
 
         {issue.id != null && (
-          <span className="text-[11px] font-medium text-[#71717A]">
+          <span className="ml-2 shrink-0 text-[11px] font-medium text-[#71717A]">
             #{issue.id}
           </span>
         )}

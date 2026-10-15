@@ -37,6 +37,7 @@ import {
 import { searchUsers } from "@/services/account.service"
 import { useProfile } from "@/hooks/use-profile"
 import { useLabels } from "@/hooks/use-labels"
+import { listIssueLabels } from "@/services/labels.service"
 import { useRouter } from "next/navigation"
 
 type PageProps = {
@@ -97,7 +98,8 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
         if (cancelled) return
 
         const mappedIssues: ProjectIssueItem[] = Array.isArray(issuesData)
-          ? issuesData.map((issue: Issue) => {
+          ? await Promise.all(issuesData.map(async (issue: Issue) => {
+            const labels = await listIssueLabels(issue.id).catch(() => [])
             // Map backend status values to component format
             let status: "todo" | "in_progress" | "done" = "todo"
             if (
@@ -133,9 +135,10 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
               status,
               priority,
               assignee: issue.assignee_name,
+              labels,
               createdAt: issue.created_at,
             }
-          })
+          }))
           : []
 
         setIssues(mappedIssues)
