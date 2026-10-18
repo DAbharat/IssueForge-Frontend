@@ -27,9 +27,10 @@ export async function login(userData: {
         const response = await axiosClient.post(`/api/login`, userData)
         return response.data
     } catch (error) {
-        const axiosError = error as AxiosError<ApiResponse>
-        console.error("Error logging in account: ", axiosError.response?.data.message || axiosError.message)
-        throw new Error(axiosError.response?.data.message || "An error occurred while logging in user")
+        const axiosError = error as AxiosError<ApiResponse & { error?: string }>
+        const message = axiosError.response?.data.error || axiosError.response?.data.message || axiosError.message
+        console.error("Error logging in account: ", message)
+        throw new Error(message || "An error occurred while logging in user")
     }
 }
 
@@ -38,9 +39,10 @@ export async function me() {
         const response = await axiosClient.get(`/api/me`)
         return response.data
     } catch (error) {
-        const axiosError = error as AxiosError<ApiResponse>
-        console.error("Error fetching account: ", axiosError.response?.data.message || axiosError.message)
-        throw new Error(axiosError.response?.data.message || "An error occurred while fetching account")
+        const axiosError = error as AxiosError<ApiResponse & { error?: string }>
+        const message = axiosError.response?.data.error || axiosError.response?.data.message || axiosError.message
+        console.error("Error fetching account: ", message)
+        throw new Error(message || "An error occurred while fetching account")
     }
 }
 

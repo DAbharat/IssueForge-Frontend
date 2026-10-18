@@ -95,7 +95,12 @@ axiosClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    if (error.response?.status !== 401 || !originalRequest || originalRequest._retry) {
+    const isAuthEndpoint =
+      originalRequest?.url?.includes("/api/login") ||
+      originalRequest?.url?.includes("/api/register") ||
+      originalRequest?.url?.includes("/api/auth/refresh")
+
+    if (error.response?.status !== 401 || !originalRequest || originalRequest._retry || isAuthEndpoint) {
       return Promise.reject(error)
     }
 
