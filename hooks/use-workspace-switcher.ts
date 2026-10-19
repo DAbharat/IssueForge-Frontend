@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useProfile } from "@/hooks/use-profile"
 
-type WorkspaceOption = {
+export type WorkspaceOption = {
     id: string | number
     name: string
     role?: string
@@ -18,21 +18,28 @@ const ACTIVE_WORKSPACE_KEY = "activeWorkspaceId"
  * - Reads the full workspaces list from `useProfile` (via GET /api/me)
  * - Persists the active workspace ID in localStorage so it survives page refresh
  * - Provides `switchWorkspace` which updates state, persists, and navigates to /workspace
+ * - Provides `handleWorkspaceCreated` to instantly update the list, switch, and re-sync
  */
 export function useWorkspaceSwitcher() {
-    const { profile } = useProfile()
+    const { profile, refetch } = useProfile()
     const router = useRouter()
 
-    const workspaces: WorkspaceOption[] =
-        profile?.workspaces?.map((ws) => ({
-            id: ws.id,
-            name: ws.name,
-            role: ws.role,
-        })) ?? []
-
+    const [workspaces, setWorkspaces] = useState<WorkspaceOption[]>([])
     const [activeWorkspace, setActiveWorkspace] = useState<WorkspaceOption | null>(null)
 
-    // Resolve the active workspace once the profile is available
+    // Sync workspaces when profile changes
+    useEffect(() => {
+        if (profile?.workspaces) {
+            const list: WorkspaceOption[] = profile.workspaces.map((ws) => ({
+                id: ws.id,
+                name: ws.name,
+                role: ws.role,
+            }))
+            setWorkspaces(list)
+        }
+    }, [profile])
+
+    // Resolve the active workspace once workspaces are available
     useEffect(() => {
         if (workspaces.length === 0) return
 
@@ -47,9 +54,7 @@ export function useWorkspaceSwitcher() {
         } catch {
             setActiveWorkspace(workspaces[0])
         }
-    // We only want this to re-run when the list of workspaces itself changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [profile])
+    }, [workspaces])
 
     const switchWorkspace = useCallback(
         (workspace: WorkspaceOption, tab: string = "General") => {
@@ -69,10 +74,24 @@ export function useWorkspaceSwitcher() {
         [router]
     )
 
+    const handleWorkspaceCreated = useCallback(
+        async (newWs: WorkspaceOption) => {
+            setWorkspaces((prev) => {
+                if (prev.some((w) => String(w.id) === String(newWs.id))) return prev
+                return [...prev, newWs]
+            })
+            switchWorkspace(newWs)
+            await refetch()
+        },
+        [switchWorkspace, refetch]
+    )
+
     return {
         activeWorkspace,
         workspaces,
         switchWorkspace,
+        handleWorkspaceCreated,
+        refreshWorkspaces: refetch,
         /** The raw profile returned by useProfile — exposed so callers avoid a
          *  second useProfile call for sidebar / other UI needs. */
         profile,

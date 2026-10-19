@@ -22,6 +22,7 @@ type NavbarProps = {
     workspaceName?: string
     workspaces?: WorkspaceSwitcherItem[]
     onWorkspaceSwitch?: (workspace: WorkspaceSwitcherItem) => void
+    onCreateWorkspace?: () => void
     userName?: string
     isMobile?: boolean
     onMobileSidebarToggle?: () => void
@@ -31,6 +32,7 @@ export default function Navbar({
     workspaceName,
     workspaces = [],
     onWorkspaceSwitch,
+    onCreateWorkspace,
     userName = "User",
     isMobile = false,
     onMobileSidebarToggle,
@@ -253,24 +255,21 @@ export default function Navbar({
                             IssueForge
                         </div>
 
-                        {workspaceName && (
-                            <span className="hidden shrink-0 text-[#3F3F46] md:block">/</span>
-                        )}
+                        <span className="hidden shrink-0 text-[#3F3F46] md:block">/</span>
 
-                        {/* Workspace switcher — shown when name is available */}
-                        {workspaceName && onWorkspaceSwitch ? (
+                        {/* Workspace switcher */}
+                        {onWorkspaceSwitch ? (
                             <WorkspaceSwitcher
-                                currentWorkspaceName={workspaceName}
+                                currentWorkspaceName={workspaceName || ""}
                                 workspaces={workspaces}
                                 onSwitch={onWorkspaceSwitch}
+                                onCreateWorkspace={onCreateWorkspace}
                             />
                         ) : workspaceName ? (
                             <span className="hidden truncate text-sm text-[#94A3B8] md:block">
                                 {workspaceName}
                             </span>
-                        ) : (
-                            <div className="hidden h-4 w-24 shrink-0 animate-pulse rounded-sm border border-dashed border-[#27272A] bg-[#18181B] md:block" />
-                        )}
+                        ) : null}
                     </div>
 
                     {/* Center: Search Button (triggers search modal on click or Cmd+K) */}

@@ -2,7 +2,7 @@ import axiosClient from "@/lib/axiosClient";
 import { AxiosError } from "axios";
 
 export type Workspace = {
-    id: string;
+    id: string | number;
     name: string;
     description?: string;
     created_at?: string;
@@ -26,7 +26,10 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 
 export async function createWorkspace(data: CreateWorkspaceRequest) {
     try {
-        const response = await axiosClient.post<Workspace>("/api/workspaces", data);
+        const payload: { name: string } = {
+            name: data.name.trim(),
+        };
+        const response = await axiosClient.post<Workspace>("/api/workspaces", payload);
         return response.data;
     } catch (error) {
         throw new Error(getErrorMessage(error, "An error occurred while creating the workspace."));

@@ -196,6 +196,8 @@ export function AppSidebar({
   const searchParams = useSearchParams()
 
   const currentTab = searchParams?.get("tab")
+  const currentUrlWsId = searchParams?.get("workspaceId")
+  const effectiveWorkspaceId = currentUrlWsId || activeWorkspaceId
 
   const isOverviewActive = pathname === "/overview" || pathname === "/"
   const isArchiveActive = pathname === "/archive"
@@ -208,6 +210,11 @@ export function AppSidebar({
   const isWorkspacesSectionActive =
     pathname === "/workspace" &&
     (!currentTab || currentTab === "General" || currentTab === "Members" || currentTab === "Danger Zone" || isInvitesTabActive)
+
+  const isWorkspaceContext =
+    pathname.startsWith("/workspace") ||
+    pathname.startsWith("/projects") ||
+    (!pathname.startsWith("/archive") && !pathname.startsWith("/profile"))
 
   const [projectsOpen, setProjectsOpen] = useState(true)
   const [workspacesOpen, setWorkspacesOpen] = useState(true)
@@ -341,11 +348,12 @@ export function AppSidebar({
                   ) : (
                     workspaces.map((workspace, index) => {
                       const name = workspace.name || "Workspace"
-                      const isCurrentWs =
-                        pathname === "/workspace" &&
-                        (!currentTab || currentTab === "General") &&
-                        activeWorkspaceId !== undefined &&
-                        String(workspace.id) === String(activeWorkspaceId)
+                      const isCurrentWs = Boolean(
+                        isWorkspaceContext &&
+                        effectiveWorkspaceId !== undefined &&
+                        effectiveWorkspaceId !== null &&
+                        String(workspace.id) === String(effectiveWorkspaceId)
+                      )
 
                       return (
                         <TreeNode

@@ -5,15 +5,17 @@ import { Suspense, useEffect, useState } from "react"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import Navbar from "@/components/layout/Navbar"
+import CreateWorkspaceDialog from "@/components/workspaces/CreateWorkspaceDialog"
 import { useWorkspaceSwitcher } from "@/hooks/use-workspace-switcher"
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { activeWorkspace, workspaces, switchWorkspace, profile } = useWorkspaceSwitcher()
+  const { activeWorkspace, workspaces, switchWorkspace, handleWorkspaceCreated, profile } = useWorkspaceSwitcher()
   const [userName, setUserName] = useState("User")
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [isCreateWorkspaceOpen, setIsCreateWorkspaceOpen] = useState(false)
 
   useEffect(() => {
     try {
@@ -57,7 +59,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <AppSidebar
             collapsed={sidebarCollapsed}
             onToggle={() => setSidebarCollapsed((prev) => !prev)}
-            workspaces={profile?.workspaces ?? []}
+            workspaces={workspaces.length > 0 ? workspaces : (profile?.workspaces ?? [])}
             activeWorkspaceId={activeWorkspace?.id}
             onWorkspaceSelect={switchWorkspace}
           />
@@ -81,7 +83,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               mobile
               isOpen={mobileSidebarOpen}
               onClose={() => setMobileSidebarOpen(false)}
-              workspaces={profile?.workspaces ?? []}
+              workspaces={workspaces.length > 0 ? workspaces : (profile?.workspaces ?? [])}
               activeWorkspaceId={activeWorkspace?.id}
               onWorkspaceSelect={switchWorkspace}
             />
@@ -94,12 +96,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           workspaceName={activeWorkspace?.name}
           workspaces={workspaces}
           onWorkspaceSwitch={switchWorkspace}
+          onCreateWorkspace={() => setIsCreateWorkspaceOpen(true)}
           userName={userName}
           isMobile={isMobile}
           onMobileSidebarToggle={() => setMobileSidebarOpen((prev) => !prev)}
         />
         <main className="flex-1 bg-[#000000] p-6 text-[#E2E8F0]">{children}</main>
       </div>
+
+      <CreateWorkspaceDialog
+        isOpen={isCreateWorkspaceOpen}
+        onOpenChange={setIsCreateWorkspaceOpen}
+        onSuccess={handleWorkspaceCreated}
+      />
     </div>
   )
 }
