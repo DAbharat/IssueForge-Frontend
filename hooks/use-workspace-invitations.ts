@@ -9,6 +9,7 @@ import {
 } from "@/services/invitations.service"
 import { listWorkspaceMembers, type WorkspaceMember } from "@/services/workspaceMembers.service"
 import { type ProfileCardUser } from "@/components/profile/ProfileCard"
+import { toast } from "@/components/ui/toast"
 
 export type InvitationFilter = "pending" | "accepted" | "rejected"
 
@@ -117,10 +118,13 @@ export function useWorkspaceInvitations(workspaceId: string | number | null) {
                     return updated
                 })
 
+                const targetName = existing?.fullname || existing?.username || user?.fullname || user?.username
+                toast.info("Invitation cancelled", targetName ? `Invitation for ${targetName} cancelled.` : "The invitation has been cancelled.")
                 return true
             } catch (err) {
                 const message = err instanceof Error ? err.message : "Failed to cancel invitation."
                 setError(message)
+                toast.error("Failed to cancel invitation", message)
                 throw err
             } finally {
                 setCancellingId(null)
@@ -149,10 +153,12 @@ export function useWorkspaceInvitations(workspaceId: string | number | null) {
                 // Add to pending
                 setPendingInvitations((prev) => [created, ...prev])
 
+                toast.success("Invitation sent", "Workspace invitation sent successfully.")
                 return true
             } catch (err) {
                 const message = err instanceof Error ? err.message : "Failed to send invitation."
                 setError(message)
+                toast.error("Failed to send invitation", message)
                 throw err
             } finally {
                 setInvitingId(null)

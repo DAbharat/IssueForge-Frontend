@@ -1,7 +1,8 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useMemo, useState } from "react"
 import { Search, UserPlus, X } from "lucide-react"
+import { useDebounce } from "@/hooks/use-debounce"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,26 +45,37 @@ export default function ProjectMembers({
   isAddingMember = false,
 }: ProjectMembersProps) {
   const [searchQuery, setSearchQuery] = useState("")
+  const debouncedSearch = useDebounce(searchQuery, 300)
   const [showPicker, setShowPicker] = useState(false)
   const [pickerSearch, setPickerSearch] = useState("")
+  const debouncedPickerSearch = useDebounce(pickerSearch, 300)
 
-  const filteredMembers = members.filter(
-    (member) =>
-      member.fullname.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.role.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredMembers = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase()
+    if (!q) return members
+    return members.filter(
+      (member) =>
+        member.fullname.toLowerCase().includes(q) ||
+        member.username.toLowerCase().includes(q) ||
+        member.role.toLowerCase().includes(q)
+    )
+  }, [members, debouncedSearch])
 
   // Workspace members not already in the project
-  const existingIds = new Set(members.map((m) => String(m.id ?? "")))
-  const addableMembers = workspaceMembers.filter(
-    (wm) => !existingIds.has(String(wm.id))
+  const existingIds = useMemo(() => new Set(members.map((m) => String(m.id ?? ""))), [members])
+  const addableMembers = useMemo(
+    () => workspaceMembers.filter((wm) => !existingIds.has(String(wm.id))),
+    [workspaceMembers, existingIds]
   )
-  const filteredAddable = addableMembers.filter(
-    (wm) =>
-      wm.fullname.toLowerCase().includes(pickerSearch.toLowerCase()) ||
-      wm.username.toLowerCase().includes(pickerSearch.toLowerCase())
-  )
+  const filteredAddable = useMemo(() => {
+    const q = debouncedPickerSearch.trim().toLowerCase()
+    if (!q) return addableMembers
+    return addableMembers.filter(
+      (wm) =>
+        wm.fullname.toLowerCase().includes(q) ||
+        wm.username.toLowerCase().includes(q)
+    )
+  }, [addableMembers, debouncedPickerSearch])
 
   function handlePickMember(userId: string | number) {
     onAddMember?.(userId)

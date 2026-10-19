@@ -1,6 +1,6 @@
 "use client"
 
-import { CheckCircle2, RefreshCw, XCircle } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 import { useArchive } from "@/hooks/use-archive"
 import ArchiveSummaryCards from "@/components/archive/ArchiveSummaryCards"
 import ArchiveTabs from "@/components/archive/ArchiveTabs"
@@ -57,39 +57,6 @@ export default function ArchivePage() {
                     <span>Refresh</span>
                 </button>
             </div>
-
-            {/* Notification / Alert Banners */}
-            {successMessage && (
-                <div className="flex items-center justify-between gap-3 rounded-md border border-[#22C55E]/30 bg-[#22C55E]/10 px-4 py-2.5 text-xs text-[#22C55E]">
-                    <div className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 shrink-0" />
-                        <span>{successMessage}</span>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => setSuccessMessage(null)}
-                        className="text-[#22C55E] hover:opacity-80"
-                    >
-                        ✕
-                    </button>
-                </div>
-            )}
-
-            {error && (
-                <div className="flex items-center justify-between gap-3 rounded-md border border-[#EF4444]/30 bg-[#EF4444]/10 px-4 py-2.5 text-xs text-[#EF4444]">
-                    <div className="flex items-center gap-2">
-                        <XCircle className="h-4 w-4 shrink-0" />
-                        <span>{error}</span>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => setError(null)}
-                        className="text-[#EF4444] hover:opacity-80"
-                    >
-                        ✕
-                    </button>
-                </div>
-            )}
 
             {/* 1. Summary Cards */}
             <ArchiveSummaryCards

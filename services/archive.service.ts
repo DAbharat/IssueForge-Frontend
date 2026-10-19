@@ -80,40 +80,40 @@ export async function getArchiveCounts(): Promise<ArchiveCounts> {
     }
 }
 
-export async function listArchivedWorkspaces(search?: string): Promise<ArchivedWorkspace[]> {
+export async function listArchivedWorkspaces(search?: string, signal?: AbortSignal): Promise<ArchivedWorkspace[]> {
     try {
         const params = search ? { search } : {};
-        const response = await axiosClient.get<ArchivedWorkspace[]>("/api/archive/workspaces", { params });
+        const response = await axiosClient.get<ArchivedWorkspace[]>("/api/archive/workspaces", { params, signal });
         return response.data ?? [];
     } catch {
         return [];
     }
 }
 
-export async function listArchivedProjects(search?: string): Promise<ArchivedProject[]> {
+export async function listArchivedProjects(search?: string, signal?: AbortSignal): Promise<ArchivedProject[]> {
     try {
         const params = search ? { search } : {};
-        const response = await axiosClient.get<ArchivedProject[]>("/api/archive/projects", { params });
+        const response = await axiosClient.get<ArchivedProject[]>("/api/archive/projects", { params, signal });
         return response.data ?? [];
     } catch {
         return [];
     }
 }
 
-export async function listArchivedIssues(search?: string): Promise<ArchivedIssue[]> {
+export async function listArchivedIssues(search?: string, signal?: AbortSignal): Promise<ArchivedIssue[]> {
     try {
         const params = search ? { search } : {};
-        const response = await axiosClient.get<ArchivedIssue[]>("/api/archive/issues", { params });
+        const response = await axiosClient.get<ArchivedIssue[]>("/api/archive/issues", { params, signal });
         return response.data ?? [];
     } catch {
         return [];
     }
 }
 
-export async function listArchivedAttachments(search?: string): Promise<ArchivedAttachment[]> {
+export async function listArchivedAttachments(search?: string, signal?: AbortSignal): Promise<ArchivedAttachment[]> {
     try {
         const params = search ? { search } : {};
-        const response = await axiosClient.get<ArchivedAttachment[]>("/api/archive/attachments", { params });
+        const response = await axiosClient.get<ArchivedAttachment[]>("/api/archive/attachments", { params, signal });
         return response.data ?? [];
     } catch {
         return [];

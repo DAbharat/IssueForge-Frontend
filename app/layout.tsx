@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 
 import AppShell from "@/components/layout/AppShell";
+import { Toaster } from "@/components/ui/toast";
 
 const Inter_Font = Inter({
   variable: "--fonr-inter",
@@ -36,6 +37,7 @@ export default function RootLayout({
     >
       <body className={`${Inter_Font.className} antialiased`}>
         <AppShell>{children}</AppShell>
+        <Toaster />
       </body>
     </html>
   );

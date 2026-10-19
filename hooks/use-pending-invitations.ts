@@ -7,6 +7,7 @@ import {
   listPendingWorkspaceInvitations,
   type WorkspaceInvitation,
 } from "@/services/invitations.service"
+import { toast } from "@/components/ui/toast"
 
 export function usePendingInvitations() {
   const [invitations, setInvitations] = useState<WorkspaceInvitation[]>([])
@@ -33,11 +34,22 @@ export function usePendingInvitations() {
   async function respond(invitationId: string | number, action: typeof acceptInvitation) {
     setUpdatingId(invitationId)
     setError(null)
+    const isAccept = action === acceptInvitation
+    const target = invitations.find((inv) => String(inv.id) === String(invitationId))
+    const wsName = target?.workspace_name ? `"${target.workspace_name}"` : "the workspace"
+
     try {
       await action(invitationId)
       setInvitations((current) => current.filter((invitation) => String(invitation.id) !== String(invitationId)))
+      if (isAccept) {
+        toast.success("Invitation accepted", `You have successfully joined ${wsName}!`)
+      } else {
+        toast.info("Invitation declined", `Invitation to join ${wsName} was declined.`)
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to update invitation")
+      const message = err instanceof Error ? err.message : "Unable to update invitation"
+      setError(message)
+      toast.error(isAccept ? "Failed to accept invitation" : "Failed to decline invitation", message)
       throw err
     } finally {
       setUpdatingId(null)

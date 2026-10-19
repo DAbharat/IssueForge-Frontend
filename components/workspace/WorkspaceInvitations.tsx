@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { type WorkspaceInvitation } from "@/services/invitations.service"
 import { type WorkspaceMember } from "@/services/workspaceMembers.service"
+import { useDebounce } from "@/hooks/use-debounce"
+import { toast } from "@/components/ui/toast"
 
 type PendingCancel = {
   invitationId: string | number
@@ -60,6 +62,7 @@ export default function WorkspaceInvitations({
 }: WorkspaceInvitationsProps) {
   const [filter, setFilter] = useState<InvitationTabFilter>("pending")
   const [searchQuery, setSearchQuery] = useState("")
+  const debouncedQuery = useDebounce(searchQuery, 300)
   const [pendingCancel, setPendingCancel] = useState<PendingCancel | null>(null)
   const [isConfirming, setIsConfirming] = useState(false)
 
@@ -68,14 +71,16 @@ export default function WorkspaceInvitations({
     setIsConfirming(true)
     try {
       await onCancelInvite(pendingCancel.invitationId, pendingCancel.user)
+    } catch {
+      // toast is dispatched by useWorkspaceInvitations hook
     } finally {
       setIsConfirming(false)
       setPendingCancel(null)
     }
   }
 
-  // Filtered lists based on search query
-  const query = searchQuery.trim().toLowerCase()
+  // Filtered lists based on debounced search query
+  const query = debouncedQuery.trim().toLowerCase()
 
   const filteredPending = useMemo(() => {
     if (!query) return pendingInvitations
@@ -377,9 +382,15 @@ export default function WorkspaceInvitations({
                 isAdmin={isAdmin}
                 currentUserId={currentUserId}
                 isAlreadyMember={false}
-                onInvite={() => {
+                onInvite={async () => {
                   const uid = inv.invited_user_id ?? inv.id
-                  if (uid !== undefined) onReInvite(uid)
+                  if (uid !== undefined) {
+                    try {
+                      await onReInvite(uid)
+                    } catch {
+                      // toast handled by useWorkspaceInvitations
+                    }
+                  }
                 }}
                 isInviting={invitingId === (inv.invited_user_id ?? inv.id)}
                 tooltipLabel="Re-send invitation"

@@ -53,15 +53,19 @@ export type SearchUserResult = {
     created_at?: string;
 };
 
-export async function searchUsers(query: string = "") {
+export async function searchUsers(query: string = "", signal?: AbortSignal) {
     try {
         const response = await axiosClient.get<SearchUserResult[]>(`/api/users/search`, {
             params: query ? { search: query } : {},
+            signal,
         });
         return response.data;
-    } catch (error) {
+    } catch (error: any) {
+        if (error?.name === "CanceledError" || error?.code === "ERR_CANCELED") {
+            return [];
+        }
         const axiosError = error as AxiosError<ApiResponse>;
-        console.error("Error searching users: ", axiosError.response?.data.message || axiosError.message);
+        console.error("Error searching users: ", axiosError.response?.data?.message || axiosError.message);
         return [];
     }
 }

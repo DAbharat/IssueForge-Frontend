@@ -37,6 +37,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
+import { toast } from "@/components/ui/toast"
 
 function formatDate(dateString?: string) {
     if (!dateString) return "—"
@@ -235,26 +236,30 @@ export default function IssuePage({
     const handleStatusChange = async (nextStatus: IssueStatus) => {
         if (!issueID) return
 
+        const prev = status
         setStatus(nextStatus)
 
         try {
             await updateIssueStatus(issueID, nextStatus)
+            toast.success("Status updated", `Issue status set to ${nextStatus.replace("_", " ")}.`)
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Unable to update issue status")
+            setStatus(prev)
+            toast.error("Failed to update status", err instanceof Error ? err.message : "Unable to update issue status.")
         }
     }
 
     const handlePriorityChange = async (nextPriority: IssuePriority) => {
         if (!issueID) return
 
+        const prev = priority
         setPriority(nextPriority)
 
         try {
             await updateIssuePriority(issueID, nextPriority)
+            toast.success("Priority updated", `Issue priority set to ${nextPriority}.`)
         } catch (err) {
-            setError(
-                err instanceof Error ? err.message : "Unable to update issue priority"
-            )
+            setPriority(prev)
+            toast.error("Failed to update priority", err instanceof Error ? err.message : "Unable to update issue priority.")
         }
     }
 
@@ -282,8 +287,9 @@ export default function IssuePage({
             setIssueDescription(updatedIssue.description ?? "")
             setUpdatedAt(updatedIssue.updated_at)
             setIsEditDialogOpen(false)
+            toast.success("Issue updated", "Issue details saved successfully.")
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Unable to update issue details")
+            toast.error("Failed to update issue", err instanceof Error ? err.message : "Unable to update issue details.")
         } finally {
             setIsSavingEdit(false)
         }
@@ -294,9 +300,10 @@ export default function IssuePage({
         setIsDeletingIssue(true)
         try {
             await deleteIssue(issueID)
+            toast.success("Issue deleted", "Issue was deleted successfully.")
             router.push(`/projects/${projectID}`)
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Unable to delete issue")
+            toast.error("Failed to delete issue", err instanceof Error ? err.message : "Unable to delete issue.")
             setIsDeletingIssue(false)
             setIsDeleteDialogOpen(false)
         }
@@ -323,8 +330,9 @@ export default function IssuePage({
                     previewUrl: URL.createObjectURL(images[index].blob),
                 })),
             ])
+            toast.success("Attachment uploaded", "Image uploaded successfully.")
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Unable to upload attachment")
+            toast.error("Upload failed", err instanceof Error ? err.message : "Unable to upload attachment.")
             throw err
         } finally {
             setIsUploadingAttachment(false)
@@ -336,8 +344,9 @@ export default function IssuePage({
         try {
             await deleteAttachment(attachmentId)
             setAttachments((current) => current.filter((attachment) => attachment.id !== attachmentId))
+            toast.success("Attachment deleted", "Attachment removed.")
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Unable to delete attachment")
+            toast.error("Failed to delete attachment", err instanceof Error ? err.message : "Unable to delete attachment.")
             throw err
         } finally {
             setDeletingAttachmentId(null)
@@ -345,20 +354,24 @@ export default function IssuePage({
     }
 
     async function handleSubmitComment(parentCommentId?: string | number) {
-        const created = await submitComment(commentText, parentCommentId)
-        if (!created) return
+        try {
+            const created = await submitComment(commentText, parentCommentId)
+            if (!created) return
 
-        if (commentAttachment && issueID) {
-            const formData = new FormData()
-            formData.append("file", commentAttachment)
-            formData.append("comment_id", String(created.id))
-            await createAttachment(issueID, formData)
-            await reloadComments()
+            if (commentAttachment && issueID) {
+                const formData = new FormData()
+                formData.append("file", commentAttachment)
+                formData.append("comment_id", String(created.id))
+                await createAttachment(issueID, formData)
+                await reloadComments()
+            }
+
+            setCommentText("")
+            setReplyToCommentId(null)
+            setCommentAttachment(null)
+        } catch (err) {
+            toast.error("Failed to post comment", err instanceof Error ? err.message : "Unable to post comment.")
         }
-
-        setCommentText("")
-        setReplyToCommentId(null)
-        setCommentAttachment(null)
     }
 
     function toggleCommentReplies(commentId: string | number) {
@@ -386,12 +399,6 @@ export default function IssuePage({
                     onSubmit={() => handleSubmitComment(comment.id)}
                     isSubmitting={isSubmitting}
                 />
-
-                    {commentsError && (
-                        <div className="rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300">
-                            {commentsError}
-                        </div>
-                    )}
             </div>
         ) : null
 
@@ -419,13 +426,7 @@ export default function IssuePage({
                     setExpandedCommentIds((current) => new Set(current).add(String(comment.id)))
                 }}
                 onEdit={editComment}
-                onDelete={async (commentId) => {
-                    try {
-                        await removeComment(commentId)
-                    } catch (err) {
-                        setError(err instanceof Error ? err.message : "Unable to delete comment")
-                    }
-                }}
+                onDelete={removeComment}
             >
                 {replies.map((reply) => renderCommentTree(reply, allComments))}
             </CommentCard>

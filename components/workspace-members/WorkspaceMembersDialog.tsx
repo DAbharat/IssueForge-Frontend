@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { MoreHorizontal, Search, ShieldCheck, Trash2, X } from "lucide-react"
+import { useDebounce } from "@/hooks/use-debounce"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -195,20 +196,23 @@ export default function WorkspaceMembersDialog({
   onRemove,
 }: WorkspaceMembersDialogProps) {
   const [search, setSearch] = useState("")
+  const debouncedSearch = useDebounce(search, 300)
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const [isActioning, setIsActioning] = useState(false)
-  const [actionError, setActionError] = useState<string | null>(null)
 
-  const filtered = members.filter(
-    (m) =>
-      m.fullname.toLowerCase().includes(search.toLowerCase()) ||
-      m.username.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase()
+    if (!q) return members
+    return members.filter(
+      (m) =>
+        m.fullname.toLowerCase().includes(q) ||
+        m.username.toLowerCase().includes(q)
+    )
+  }, [members, debouncedSearch])
 
   async function handleConfirm() {
     if (!pendingAction) return
     setIsActioning(true)
-    setActionError(null)
 
     try {
       if (pendingAction.type === "promote" && onPromote) {
@@ -217,8 +221,6 @@ export default function WorkspaceMembersDialog({
         await onRemove(pendingAction.member)
       }
       setPendingAction(null)
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
     } finally {
       setIsActioning(false)
     }
@@ -367,12 +369,6 @@ export default function WorkspaceMembersDialog({
             )}
           </div>
 
-          {/* ── Error banner ── */}
-          {actionError && (
-            <div className="border-t border-[#27272A] px-5 py-3">
-              <p className="text-xs text-red-400">{actionError}</p>
-            </div>
-          )}
 
           {/* ── Footer ── */}
           <div className="flex justify-end border-t border-[#27272A] px-5 py-3">
@@ -407,7 +403,6 @@ export default function WorkspaceMembersDialog({
           onCancel={() => {
             if (!isActioning) {
               setPendingAction(null)
-              setActionError(null)
             }
           }}
         />

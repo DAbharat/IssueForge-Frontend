@@ -16,6 +16,8 @@ import {
 import { restoreDeletedWorkspace } from "@/services/workspaces.service"
 import { restoreProject } from "@/services/projects.service"
 import { restoreDeletedIssue } from "@/services/issues.service"
+import { useDebounce } from "@/hooks/use-debounce"
+import { toast } from "@/components/ui/toast"
 
 export const ARCHIVE_TABS = ["Workspaces", "Projects", "Issues", "Attachments"] as const
 export type ArchiveTabKey = (typeof ARCHIVE_TABS)[number]
@@ -23,7 +25,7 @@ export type ArchiveTabKey = (typeof ARCHIVE_TABS)[number]
 export function useArchive() {
     const [activeTab, setActiveTab] = useState<ArchiveTabKey>("Workspaces")
     const [searchQuery, setSearchQuery] = useState("")
-    const [debouncedSearch, setDebouncedSearch] = useState("")
+    const debouncedSearch = useDebounce(searchQuery, 350)
 
     const [counts, setCounts] = useState<ArchiveCounts>({
         workspaces: 0,
@@ -45,14 +47,6 @@ export function useArchive() {
     const [error, setError] = useState<string | null>(null)
     const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
-    // Debounce search
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedSearch(searchQuery)
-        }, 300)
-        return () => clearTimeout(timer)
-    }, [searchQuery])
-
     const fetchCounts = useCallback(async () => {
         try {
             const data = await getArchiveCounts()
@@ -64,49 +58,52 @@ export function useArchive() {
         }
     }, [])
 
-    const fetchTabData = useCallback(async (tab: ArchiveTabKey, search: string) => {
+    const fetchTabData = useCallback(async (tab: ArchiveTabKey, search: string, signal?: AbortSignal) => {
         setIsLoadingTab(true)
         try {
             switch (tab) {
                 case "Workspaces": {
-                    const data = await listArchivedWorkspaces(search || undefined)
-                    setWorkspaces(Array.isArray(data) ? data : [])
+                    const data = await listArchivedWorkspaces(search || undefined, signal)
+                    if (!signal?.aborted) setWorkspaces(Array.isArray(data) ? data : [])
                     break
                 }
                 case "Projects": {
-                    const data = await listArchivedProjects(search || undefined)
-                    setProjects(Array.isArray(data) ? data : [])
+                    const data = await listArchivedProjects(search || undefined, signal)
+                    if (!signal?.aborted) setProjects(Array.isArray(data) ? data : [])
                     break
                 }
                 case "Issues": {
-                    const data = await listArchivedIssues(search || undefined)
-                    setIssues(Array.isArray(data) ? data : [])
+                    const data = await listArchivedIssues(search || undefined, signal)
+                    if (!signal?.aborted) setIssues(Array.isArray(data) ? data : [])
                     break
                 }
                 case "Attachments": {
-                    const data = await listArchivedAttachments(search || undefined)
-                    setAttachments(Array.isArray(data) ? data : [])
+                    const data = await listArchivedAttachments(search || undefined, signal)
+                    if (!signal?.aborted) setAttachments(Array.isArray(data) ? data : [])
                     break
                 }
             }
         } catch {
-            // Default to empty array so empty state is displayed without intrusive errors
-            switch (tab) {
-                case "Workspaces":
-                    setWorkspaces([])
-                    break
-                case "Projects":
-                    setProjects([])
-                    break
-                case "Issues":
-                    setIssues([])
-                    break
-                case "Attachments":
-                    setAttachments([])
-                    break
+            if (!signal?.aborted) {
+                switch (tab) {
+                    case "Workspaces":
+                        setWorkspaces([])
+                        break
+                    case "Projects":
+                        setProjects([])
+                        break
+                    case "Issues":
+                        setIssues([])
+                        break
+                    case "Attachments":
+                        setAttachments([])
+                        break
+                }
             }
         } finally {
-            setIsLoadingTab(false)
+            if (!signal?.aborted) {
+                setIsLoadingTab(false)
+            }
         }
     }, [])
 
@@ -115,9 +112,14 @@ export function useArchive() {
         fetchCounts()
     }, [fetchCounts])
 
-    // Tab or search change
+    // Tab or debounced search change with AbortController to cancel superseded calls
     useEffect(() => {
-        fetchTabData(activeTab, debouncedSearch)
+        const controller = new AbortController()
+        fetchTabData(activeTab, debouncedSearch, controller.signal)
+
+        return () => {
+            controller.abort()
+        }
     }, [activeTab, debouncedSearch, fetchTabData])
 
     const handleRestore = useCallback(
@@ -138,11 +140,15 @@ export function useArchive() {
                     await restoreDeletedIssue(id)
                 }
 
-                setSuccessMessage(`${name ? `"${name}"` : "Item"} restored successfully.`)
+                const msg = `${name ? `"${name}"` : "Item"} restored successfully.`
+                setSuccessMessage(msg)
+                toast.success("Restored successfully", msg)
                 // Refresh list and counts
                 await Promise.all([fetchCounts(), fetchTabData(activeTab, debouncedSearch)])
             } catch (err) {
-                setError(err instanceof Error ? err.message : "Failed to restore item.")
+                const msg = err instanceof Error ? err.message : "Failed to restore item."
+                setError(msg)
+                toast.error("Restore failed", msg)
             } finally {
                 setIsRestoring(false)
                 setRestoringId(null)

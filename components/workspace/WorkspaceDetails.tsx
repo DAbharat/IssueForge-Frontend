@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Globe, Copy, Pencil } from "lucide-react"
+import { toast } from "@/components/ui/toast"
 
 type WorkspaceDetailsProps = {
   workspaceId: string | number | null
@@ -88,7 +89,10 @@ export default function WorkspaceDetails({
             className="flex-1 bg-transparent text-sm text-[#94A3B8] focus:outline-none"
           />
           <button 
-            onClick={() => navigator.clipboard.writeText(`ws_${workspaceId || ''}`)}
+            onClick={() => {
+              navigator.clipboard.writeText(`ws_${workspaceId || ''}`)
+              toast.info("Copied to clipboard", "Workspace ID copied to clipboard.")
+            }}
             className="text-[#94A3B8] hover:text-[#E2E8F0] transition-colors"
             title="Copy ID"
           >

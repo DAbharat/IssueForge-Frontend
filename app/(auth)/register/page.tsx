@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 
 import Register from "@/components/auth/register"
 import { register } from "@/services/account.service"
+import { toast } from "@/components/ui/toast"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -25,13 +26,10 @@ export default function RegisterPage() {
     event.preventDefault()
     setErrorMessage("")
 
-    // if (!acceptedTerms) {
-    //   setErrorMessage("You must agree to the Terms & Conditions to continue.")
-    //   return
-    // }
-
     if (!firstName.trim() || !lastName.trim() || !username.trim()) {
-      setErrorMessage("Please enter your first name, last name, and username.")
+      const msg = "Please enter your first name, last name, and username."
+      setErrorMessage(msg)
+      toast.warning("Missing required fields", msg)
       return
     }
 
@@ -44,9 +42,12 @@ export default function RegisterPage() {
         email,
         password,
       })
+      toast.success("Account created", "Your account has been created. Please sign in.")
       router.push("/login")
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "An error occurred while registering user")
+      const message = error instanceof Error ? error.message : "An error occurred while registering user"
+      setErrorMessage(message)
+      toast.error("Registration failed", message)
     } finally {
       setIsSubmitting(false)
     }

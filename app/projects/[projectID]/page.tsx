@@ -39,6 +39,7 @@ import { useProfile } from "@/hooks/use-profile"
 import { useLabels } from "@/hooks/use-labels"
 import { listIssueLabels } from "@/services/labels.service"
 import { useRouter } from "next/navigation"
+import { toast } from "@/components/ui/toast"
 
 type PageProps = {
   params: Promise<{
@@ -300,9 +301,10 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
       if (payload.label_ids && payload.label_ids.length > 0) {
         await attachLabels(payload.label_ids, String(created.id))
       }
+      toast.success("Issue created", `Issue "${created.title}" was created successfully.`)
       setShowCreateIssue(false)
-    } catch {
-      // silently swallow for now — a toast system can be added later
+    } catch (err) {
+      toast.error("Failed to create issue", err instanceof Error ? err.message : "Could not create issue.")
     } finally {
       setIsCreating(false)
     }
@@ -324,6 +326,7 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
       }
 
       await addMemberToProject(projectID, userId)
+      toast.success("Member added", "Member has been added to the project.")
 
       // Refresh project members list
       const refreshed = await listProjectMembers(projectID)
@@ -354,6 +357,7 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
       }
     } catch (err) {
       console.error("[ProjectPage] Error adding member:", err)
+      toast.error("Failed to add member", err instanceof Error ? err.message : "Unable to add member to project.")
     } finally {
       setIsAddingMember(false)
     }
@@ -366,8 +370,9 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
     try {
       const updatedProject = await updateProjectDetails(projectID, details)
       setProject(updatedProject)
+      toast.success("Project updated", "Project details saved successfully.")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to update project details")
+      toast.error("Failed to update project", err instanceof Error ? err.message : "Unable to update project details.")
     } finally {
       setIsSavingSettings(false)
     }
@@ -380,8 +385,9 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
     try {
       const updatedProject = await updateProjectLead(projectID, { lead_id: leadId })
       setProject(updatedProject)
+      toast.success("Project lead updated", "Project lead saved successfully.")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to update project lead")
+      toast.error("Failed to update project lead", err instanceof Error ? err.message : "Unable to update project lead.")
     } finally {
       setIsSavingSettings(false)
     }
@@ -393,9 +399,10 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
     setIsDeletingProject(true)
     try {
       await deleteProject(projectID)
+      toast.success("Project deleted", "Project was deleted successfully.")
       router.push("/workspace")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to delete project")
+      toast.error("Failed to delete project", err instanceof Error ? err.message : "Unable to delete project.")
       setIsDeletingProject(false)
     }
   }

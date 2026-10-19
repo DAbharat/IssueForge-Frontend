@@ -12,6 +12,7 @@ import CreateWorkspaceCard, {
     type CreateWorkspacePayload,
 } from "@/components/workspaces/CreateWorkspaceCard"
 import { createWorkspace, type Workspace } from "@/services/workspaces.service"
+import { toast } from "@/components/ui/toast"
 
 export type CreateWorkspaceDialogProps = {
     isOpen: boolean
@@ -25,11 +26,9 @@ export default function CreateWorkspaceDialog({
     onSuccess,
 }: CreateWorkspaceDialogProps) {
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [error, setError] = useState<string | null>(null)
 
     async function handleCreate(payload: CreateWorkspacePayload) {
         setIsSubmitting(true)
-        setError(null)
 
         try {
             const created = await createWorkspace({
@@ -38,6 +37,7 @@ export default function CreateWorkspaceDialog({
 
             setIsSubmitting(false)
             onOpenChange(false)
+            toast.success("Workspace created", `Workspace "${created.name}" created successfully.`)
 
             if (onSuccess && created) {
                 onSuccess({
@@ -48,7 +48,8 @@ export default function CreateWorkspaceDialog({
             }
         } catch (err) {
             setIsSubmitting(false)
-            setError(err instanceof Error ? err.message : "Failed to create workspace.")
+            const message = err instanceof Error ? err.message : "Failed to create workspace."
+            toast.error("Failed to create workspace", message)
         }
     }
 
@@ -70,7 +71,6 @@ export default function CreateWorkspaceDialog({
                     onSubmit={handleCreate}
                     onCancel={() => onOpenChange(false)}
                     isSubmitting={isSubmitting}
-                    error={error}
                 />
             </DialogContent>
         </Dialog>

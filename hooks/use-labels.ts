@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { toast } from "@/components/ui/toast"
 import {
   attachLabelsToIssue,
   createLabel,
@@ -54,9 +55,11 @@ export function useLabels(projectId: string | null, issueId: string | null = nul
       await attachLabelsToIssue(targetIssueId, labelIds)
       const refreshed = await listIssueLabels(targetIssueId)
       setIssueLabels(refreshed)
+      toast.success("Labels updated", "Labels assigned to this issue successfully.")
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to attach labels"
       setError(message)
+      toast.error("Failed to update labels", message)
       throw err
     } finally {
       setIsUpdating(false)
@@ -71,9 +74,11 @@ export function useLabels(projectId: string | null, issueId: string | null = nul
     try {
       const created = await createLabel(projectId, { name, color })
       setProjectLabels((current) => [...current, created])
+      toast.success("Label created", `Label "${name}" created successfully.`)
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to create label"
       setError(message)
+      toast.error("Failed to create label", message)
       throw err
     } finally {
       setIsUpdating(false)
@@ -86,9 +91,11 @@ export function useLabels(projectId: string | null, issueId: string | null = nul
     try {
       await deleteLabel(labelId)
       setProjectLabels((current) => current.filter((label) => String(label.id) !== String(labelId)))
+      toast.success("Label deleted", "Label deleted from project successfully.")
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to delete label"
       setError(message)
+      toast.error("Failed to delete label", message)
       throw err
     } finally {
       setIsUpdating(false)
@@ -103,9 +110,11 @@ export function useLabels(projectId: string | null, issueId: string | null = nul
     try {
       await removeLabelFromIssue(issueId, labelId)
       setIssueLabels((current) => current.filter((label) => String(label.id) !== String(labelId)))
+      toast.success("Label removed", "Label removed from this issue.")
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to remove label"
       setError(message)
+      toast.error("Failed to remove label", message)
       throw err
     } finally {
       setIsUpdating(false)

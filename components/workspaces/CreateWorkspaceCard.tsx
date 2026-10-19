@@ -15,8 +15,6 @@ export type CreateWorkspaceCardProps = {
     onCancel: () => void
     /** Disables the form while saving */
     isSubmitting?: boolean
-    /** Server error message to display */
-    error?: string | null
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -25,7 +23,6 @@ export default function CreateWorkspaceCard({
     onSubmit,
     onCancel,
     isSubmitting = false,
-    error,
 }: CreateWorkspaceCardProps) {
     const [name, setName] = useState("")
 
@@ -67,12 +64,6 @@ export default function CreateWorkspaceCard({
             {/* ── Body ── */}
             <form onSubmit={handleSubmit}>
                 <div className="space-y-4 px-5 py-5">
-                    {/* Error message banner */}
-                    {error && (
-                        <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-200">
-                            {error}
-                        </div>
-                    )}
 
                     {/* Workspace name */}
                     <div className="space-y-1.5">

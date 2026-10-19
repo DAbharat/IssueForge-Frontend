@@ -2,7 +2,8 @@
 
 import { Search, SlidersHorizontal, Plus, Globe, Copy, MoreVertical, UserPlus, Trash2, ArrowRightLeft, ChevronDown } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Suspense, useEffect, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
+import { useDebounce } from "@/hooks/use-debounce"
 
 import {
   AlertDialog,
@@ -34,6 +35,7 @@ import { listWorkspaceMembers, removeWorkspaceMember, promoteWorkspaceMember, ty
 import { updateWorkspaceName, getWorkspaceById, deleteWorkspace, type Workspace } from "@/services/workspaces.service"
 import { listProjectIssues } from "@/services/issues.service"
 import { listProjectMembers } from "@/services/projectMembers.service"
+import { toast } from "@/components/ui/toast"
 
 function WorkspaceContent() {
   const searchParams = useSearchParams()
@@ -51,6 +53,8 @@ function WorkspaceContent() {
   const [showMembersDialog, setShowMembersDialog] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeletingWorkspace, setIsDeletingWorkspace] = useState(false)
+  const [projectSearch, setProjectSearch] = useState("")
+  const debouncedProjectSearch = useDebounce(projectSearch, 300)
 
   const tabParam = searchParams.get("tab")
   const [activeTab, setActiveTab] = useState<WorkspaceTabKey>(() => {
@@ -214,6 +218,16 @@ function WorkspaceContent() {
 
   const emptyProjects = !isLoadingProjects && projects.length === 0
 
+  const filteredProjects = useMemo(() => {
+    const q = debouncedProjectSearch.trim().toLowerCase()
+    if (!q) return projects
+    return projects.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.description && p.description.toLowerCase().includes(q))
+    )
+  }, [projects, debouncedProjectSearch])
+
   async function handleCreateProject(payload: CreateProjectPayload) {
     if (!workspaceId) return
     setIsCreating(true)
@@ -222,6 +236,7 @@ function WorkspaceContent() {
         name: payload.name,
         description: payload.description,
       })
+      toast.success("Project created", `Project "${payload.name}" was created successfully.`)
       setShowCreateProject(false)
       // Refresh project list
       const updated = await listProjectsByLead(workspaceId)
@@ -244,8 +259,8 @@ function WorkspaceContent() {
         })
       )
       setProjects(projectsWithStats)
-    } catch {
-      // keep modal open so user can retry
+    } catch (err) {
+      toast.error("Failed to create project", err instanceof Error ? err.message : "An error occurred while creating project.")
     } finally {
       setIsCreating(false)
     }
@@ -256,9 +271,10 @@ function WorkspaceContent() {
     setIsDeletingWorkspace(true)
     try {
       await deleteWorkspace(workspaceId)
+      toast.success("Workspace deleted", `Workspace "${workspaceName}" was deleted successfully.`)
       router.push("/")
-    } catch {
-      // keep dialog open so user can retry
+    } catch (err) {
+      toast.error("Failed to delete workspace", err instanceof Error ? err.message : "An error occurred while deleting workspace.")
     } finally {
       setIsDeletingWorkspace(false)
       setShowDeleteConfirm(false)
@@ -267,13 +283,18 @@ function WorkspaceContent() {
 
   async function handleSaveWorkspaceDetails(name: string, description: string) {
     if (!workspaceId) return
-    await updateWorkspaceName(workspaceId, { 
-      name,
-      description
-    })
-    setWorkspaceName(name)
-    if (workspaceDetails) {
-      setWorkspaceDetails({ ...workspaceDetails, name, description })
+    try {
+      await updateWorkspaceName(workspaceId, { 
+        name,
+        description
+      })
+      setWorkspaceName(name)
+      if (workspaceDetails) {
+        setWorkspaceDetails({ ...workspaceDetails, name, description })
+      }
+      toast.success("Workspace updated", "Workspace details updated successfully.")
+    } catch (err) {
+      toast.error("Failed to update workspace", err instanceof Error ? err.message : "An error occurred while updating workspace.")
     }
   }
 
@@ -431,7 +452,7 @@ function WorkspaceContent() {
             pendingCount={members.filter((member) => member.status === "pending").length}
             onSearchChange={() => undefined}
             onStatusChange={() => undefined}
-            onManageMembers={() => undefined}
+            onManageMembers={() => handleTabChange("Invitations")}
             onShowAllMembers={() => setShowMembersDialog(true)}
           />
         )}
@@ -459,6 +480,8 @@ function WorkspaceContent() {
                 <input
                   type="text"
                   placeholder="Search projects..."
+                  value={projectSearch}
+                  onChange={(e) => setProjectSearch(e.target.value)}
                   className="h-10 w-full rounded-md border border-[#27272A] bg-[#0E0E11] pl-9 pr-4 text-sm text-[#E2E8F0] placeholder:text-[#94A3B8] transition-colors focus:border-[#3F3F46] focus:outline-none"
                 />
               </div>
@@ -481,9 +504,11 @@ function WorkspaceContent() {
               <div className="py-8 text-center text-sm text-[#94A3B8]">Loading projects...</div>
             ) : emptyProjects ? (
               <div className="py-12 text-center text-sm text-[#94A3B8]">No projects yet</div>
+            ) : filteredProjects.length === 0 ? (
+              <div className="py-12 text-center text-sm text-[#94A3B8]">No projects match your search</div>
             ) : (
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {projects.map((project) => (
+                {filteredProjects.map((project) => (
                   <div
                     key={project.id}
                     onClick={() => router.push(`/projects/${project.id}`)}
@@ -644,15 +669,9 @@ function WorkspaceContent() {
             if (!workspaceId) return
             const uid = member.user_id ?? member.id
             if (uid === undefined || uid === null) return
-            await promoteWorkspaceMember(workspaceId, uid)
-          }}
-          onRemove={async (member) => {
-            if (!workspaceId) return
-            const uid = member.user_id ?? member.id
-            if (uid === undefined || uid === null) return
-            await removeWorkspaceMember(workspaceId, uid)
-            // Refresh member list
             try {
+              await promoteWorkspaceMember(workspaceId, uid)
+              toast.success("Member promoted", `${member.fullname || "Member"} is now an admin.`)
               const wsMembers = await listWorkspaceMembers(workspaceId)
               if (Array.isArray(wsMembers)) {
                 setMembers(
@@ -670,6 +689,7 @@ function WorkspaceContent() {
                       fullname, 
                       username: m.username, 
                       initials, 
+                      role: m.role,
                       status: "active" as const,
                       email: m.email,
                       joined_at: m.joined_at || m.created_at
@@ -677,8 +697,45 @@ function WorkspaceContent() {
                   })
                 )
               }
-            } catch {
-              // ignore refresh error
+            } catch (err) {
+              toast.error("Failed to promote member", err instanceof Error ? err.message : "Could not promote member.")
+            }
+          }}
+          onRemove={async (member) => {
+            if (!workspaceId) return
+            const uid = member.user_id ?? member.id
+            if (uid === undefined || uid === null) return
+            try {
+              await removeWorkspaceMember(workspaceId, uid)
+              toast.success("Member removed", `${member.fullname || "Member"} was removed from the workspace.`)
+              // Refresh member list
+              const wsMembers = await listWorkspaceMembers(workspaceId)
+              if (Array.isArray(wsMembers)) {
+                setMembers(
+                  wsMembers.map((m: WorkspaceMember) => {
+                    const fullname = m.fullname || m.username || "Member"
+                    const initials =
+                      fullname
+                        .split(/\s+/)
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .map((p) => p.charAt(0).toUpperCase())
+                        .join("") || "M"
+                    return { 
+                      id: m.user_id ?? m.id, 
+                      fullname, 
+                      username: m.username, 
+                      initials, 
+                      role: m.role,
+                      status: "active" as const,
+                      email: m.email,
+                      joined_at: m.joined_at || m.created_at
+                    }
+                  })
+                )
+              }
+            } catch (err) {
+              toast.error("Failed to remove member", err instanceof Error ? err.message : "Could not remove member.")
             }
           }}
         />

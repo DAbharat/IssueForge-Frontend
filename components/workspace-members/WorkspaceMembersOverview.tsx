@@ -1,6 +1,8 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
 import { MoreVertical, Search, Check, Plus } from "lucide-react"
+import { useDebounce } from "@/hooks/use-debounce"
 
 export type WorkspaceMemberOverviewItem = {
   id?: string | number
@@ -44,6 +46,26 @@ export default function WorkspaceMembersOverview({
   onSearchChange,
   onManageMembers,
 }: WorkspaceMembersOverviewProps) {
+  const [searchQuery, setSearchQuery] = useState("")
+  const debouncedSearch = useDebounce(searchQuery, 300)
+
+  // Debounced callback to parent
+  useEffect(() => {
+    onSearchChange?.(debouncedSearch)
+  }, [debouncedSearch, onSearchChange])
+
+  const filteredMembers = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase()
+    if (!q) return members
+    return members.filter(
+      (m) =>
+        m.fullname.toLowerCase().includes(q) ||
+        (m.username && m.username.toLowerCase().includes(q)) ||
+        (m.email && m.email.toLowerCase().includes(q)) ||
+        (m.role && m.role.toLowerCase().includes(q))
+    )
+  }, [members, debouncedSearch])
+
   return (
     <div className="w-full">
       {/* Header */}
@@ -59,7 +81,8 @@ export default function WorkspaceMembersOverview({
             <input
               type="text"
               placeholder={searchPlaceholder}
-              onChange={(event) => onSearchChange?.(event.target.value)}
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
               className="h-10 w-full rounded-md border border-[#27272A] bg-[#0E0E11] pl-9 pr-4 text-sm text-[#E2E8F0] placeholder:text-[#94A3B8] transition-colors focus:border-[#3F3F46] focus:outline-none"
             />
           </div>
@@ -88,7 +111,7 @@ export default function WorkspaceMembersOverview({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#27272A]">
-              {members.map((member) => (
+              {filteredMembers.map((member) => (
                 <tr key={member.id ?? member.username ?? member.fullname} className="group hover:bg-[#18181B]/50 transition-colors">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">

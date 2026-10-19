@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef, useState } from "react"
+import React, { useCallback, useEffect, useRef, useState } from "react"
 import { Bell, ChevronLeft, Search, User2, X, Check } from "lucide-react"
 import { useRouter } from "next/navigation"
 
@@ -17,6 +17,8 @@ import {
     listPendingWorkspaceInvitationsForWorkspace,
 } from "@/services/invitations.service"
 import { useWorkspaceSwitcher } from "@/hooks/use-workspace-switcher"
+import { useDebounce } from "@/hooks/use-debounce"
+import { toast } from "@/components/ui/toast"
 
 type NavbarProps = {
     workspaceName?: string
@@ -43,6 +45,7 @@ export default function Navbar({
     // ── Search State ──────────────────────────────────────────────────────────
     const [isSearchOpen, setIsSearchOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
+    const debouncedQuery = useDebounce(searchQuery, 350)
     const [isLoading, setIsLoading] = useState(false)
     const [results, setResults] = useState<SearchUserResult[]>([])
     const [hasSearched, setHasSearched] = useState(false)
@@ -50,10 +53,10 @@ export default function Navbar({
     const [pendingInvitationsMap, setPendingInvitationsMap] = useState<Map<string, string | number>>(new Map())
     const [invitingUserId, setInvitingUserId] = useState<string | number | null>(null)
     const [cancellingUserId, setCancellingUserId] = useState<string | number | null>(null)
-    const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
 
     const searchInputRef = useRef<HTMLInputElement>(null)
     const lastExecutedQueryRef = useRef<string>("")
+    const searchAbortRef = useRef<AbortController | null>(null)
 
     // Whether current user has admin rights in the active workspace
     const isAdmin = Boolean(
@@ -112,7 +115,6 @@ export default function Navbar({
             setSearchQuery("")
             setResults([])
             setHasSearched(false)
-            setFeedbackMessage(null)
             lastExecutedQueryRef.current = ""
         }
     }, [isSearchOpen])
@@ -130,35 +132,60 @@ export default function Navbar({
         return () => window.removeEventListener("keydown", handleGlobalKeyDown)
     }, [])
 
-    // ── Search Execution (called by debounce or Enter key) ────────────────────
-    const executeSearch = async (query: string) => {
+    // Cancel in-flight search on close or unmount
+    useEffect(() => {
+        if (!isSearchOpen && searchAbortRef.current) {
+            searchAbortRef.current.abort()
+            searchAbortRef.current = null
+        }
+    }, [isSearchOpen])
+
+    // ── Search Execution (called by debouncedQuery effect or Enter key) ───────
+    const executeSearch = useCallback(async (query: string) => {
         const trimmed = query.trim()
         if (!trimmed) {
+            if (searchAbortRef.current) {
+                searchAbortRef.current.abort()
+                searchAbortRef.current = null
+            }
             setResults([])
             setHasSearched(false)
             setIsLoading(false)
             lastExecutedQueryRef.current = ""
             return
         }
+
+        // Cancel previous request to avoid spamming server and prevent race conditions
+        if (searchAbortRef.current) {
+            searchAbortRef.current.abort()
+        }
+        const controller = new AbortController()
+        searchAbortRef.current = controller
 
         lastExecutedQueryRef.current = trimmed
         setIsLoading(true)
         setHasSearched(true)
-        setFeedbackMessage(null)
 
         try {
-            const users = await searchUsers(trimmed)
-            setResults(Array.isArray(users) ? users : [])
+            const users = await searchUsers(trimmed, controller.signal)
+            if (!controller.signal.aborted) {
+                setResults(Array.isArray(users) ? users : [])
+            }
         } catch {
-            setResults([])
+            if (!controller.signal.aborted) {
+                setResults([])
+            }
         } finally {
-            setIsLoading(false)
+            if (!controller.signal.aborted) {
+                setIsLoading(false)
+            }
         }
-    }
+    }, [])
 
-    // ── Debouncing: Wait 350ms after user pauses typing before making API call ─
+    // ── Debounced Search Effect: Triggers API call 350ms after user pauses typing ─
     useEffect(() => {
-        const trimmed = searchQuery.trim()
+        if (!isSearchOpen) return
+        const trimmed = debouncedQuery.trim()
         if (!trimmed) {
             setResults([])
             setHasSearched(false)
@@ -167,21 +194,18 @@ export default function Navbar({
             return
         }
 
-        // Avoid duplicate query if Enter key was already pressed for this exact query
         if (trimmed === lastExecutedQueryRef.current) return
-
-        const debounceTimer = setTimeout(() => {
-            executeSearch(trimmed)
-        }, 350)
-
-        return () => clearTimeout(debounceTimer)
-    }, [searchQuery])
+        executeSearch(trimmed)
+    }, [debouncedQuery, isSearchOpen, executeSearch])
 
     // ── Enter Key and Escape Handlers ─────────────────────────────────────────
     const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter") {
             e.preventDefault()
-            executeSearch(searchQuery.trim())
+            const trimmed = searchQuery.trim()
+            if (trimmed) {
+                executeSearch(trimmed)
+            }
         } else if (e.key === "Escape") {
             e.preventDefault()
             setIsSearchOpen(false)
@@ -189,11 +213,10 @@ export default function Navbar({
     }
 
     // ── Send Invite Handler ───────────────────────────────────────────────────
-    const handleSendInvite = async (userId: string | number) => {
+    const handleSendInvite = async (userId: string | number, userLabel?: string) => {
         if (!activeWorkspace?.id) return
 
         setInvitingUserId(userId)
-        setFeedbackMessage(null)
 
         try {
             const newInvite = await createWorkspaceInvitation(activeWorkspace.id, { user_id: userId })
@@ -202,10 +225,14 @@ export default function Navbar({
                 next.set(String(userId), newInvite.id)
                 return next
             })
-            setFeedbackMessage("Invitation sent successfully!")
+            toast.success(
+                "Invitation sent",
+                userLabel ? `Invitation request sent to ${userLabel}.` : "Workspace invitation sent successfully!"
+            )
         } catch (err) {
-            setFeedbackMessage(
-                err instanceof Error ? err.message : "Failed to send invitation."
+            toast.error(
+                "Failed to send invitation",
+                err instanceof Error ? err.message : "An error occurred while sending the invitation."
             )
         } finally {
             setInvitingUserId(null)
@@ -213,9 +240,8 @@ export default function Navbar({
     }
 
     // ── Cancel Invite Handler ─────────────────────────────────────────────────
-    const handleCancelInvite = async (userId: string | number, invitationId: string | number) => {
+    const handleCancelInvite = async (userId: string | number, invitationId: string | number, userLabel?: string) => {
         setCancellingUserId(userId)
-        setFeedbackMessage(null)
 
         try {
             await cancelInvitation(invitationId)
@@ -224,10 +250,14 @@ export default function Navbar({
                 next.delete(String(userId))
                 return next
             })
-            setFeedbackMessage("Invitation cancelled.")
+            toast.info(
+                "Invitation cancelled",
+                userLabel ? `Invitation for ${userLabel} has been cancelled.` : "The invitation has been cancelled."
+            )
         } catch (err) {
-            setFeedbackMessage(
-                err instanceof Error ? err.message : "Failed to cancel invitation."
+            toast.error(
+                "Failed to cancel invitation",
+                err instanceof Error ? err.message : "An error occurred while cancelling the invitation."
             )
         } finally {
             setCancellingUserId(null)
@@ -364,13 +394,6 @@ export default function Navbar({
                             </button>
                         </div>
 
-                        {/* ── Feedback Message Banner ── */}
-                        {feedbackMessage && (
-                            <div className="flex items-center gap-2 border-b border-[#27272A] bg-[#18181B] px-4 py-2 text-xs text-[#E2E8F0]">
-                                <Check className="h-3.5 w-3.5 text-green-400" />
-                                <span>{feedbackMessage}</span>
-                            </div>
-                        )}
 
                         {/* ── Search Results Area ── */}
                         <div
@@ -414,10 +437,10 @@ export default function Navbar({
                                             isInWorkspace={isMember}
                                             isCurrentUser={isSelf}
                                             isPendingInvite={isPending}
-                                            onInvite={() => handleSendInvite(user.id)}
+                                            onInvite={() => handleSendInvite(user.id, user.fullname || user.username)}
                                             onCancelInvite={() => {
                                                 if (invitationId !== undefined) {
-                                                    handleCancelInvite(user.id, invitationId)
+                                                    handleCancelInvite(user.id, invitationId, user.fullname || user.username)
                                                 }
                                             }}
                                             isInviting={invitingUserId === user.id}

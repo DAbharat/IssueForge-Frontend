@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { toast } from "@/components/ui/toast"
 import {
     deleteComment,
     listIssueComments,
@@ -119,9 +120,12 @@ export function useComments(issueId: string | null, currentUserId?: string | num
                 })
                 const viewModel = toViewModel(created)
                 setComments((prev) => [...prev, viewModel])
+                toast.success("Comment posted", "Your comment has been added.")
                 return viewModel
             } catch (err) {
-                setError(err instanceof Error ? err.message : "Failed to post comment")
+                const message = err instanceof Error ? err.message : "Failed to post comment"
+                setError(message)
+                toast.error("Failed to post comment", message)
                 return null
             } finally {
                 setIsSubmitting(false)
@@ -132,15 +136,29 @@ export function useComments(issueId: string | null, currentUserId?: string | num
 
     const editComment = useCallback(async (commentId: string | number, content: string) => {
         if (!content.trim()) return
-        const updated = await updateComment(commentId, { content: content.trim() })
-        setComments((current) => current.map((comment) =>
-            String(comment.id) === String(commentId) ? toViewModel(updated, comment.attachments) : comment
-        ))
+        try {
+            const updated = await updateComment(commentId, { content: content.trim() })
+            setComments((current) => current.map((comment) =>
+                String(comment.id) === String(commentId) ? toViewModel(updated, comment.attachments) : comment
+            ))
+            toast.success("Comment updated", "Your comment was edited successfully.")
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Failed to update comment"
+            toast.error("Failed to update comment", message)
+            throw err
+        }
     }, [])
 
     const removeComment = useCallback(async (commentId: string | number) => {
-        await deleteComment(commentId)
-        setComments((current) => current.filter((comment) => String(comment.id) !== String(commentId)))
+        try {
+            await deleteComment(commentId)
+            setComments((current) => current.filter((comment) => String(comment.id) !== String(commentId)))
+            toast.success("Comment deleted", "Comment removed successfully.")
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Failed to delete comment"
+            toast.error("Failed to delete comment", message)
+            throw err
+        }
     }, [])
 
     return {

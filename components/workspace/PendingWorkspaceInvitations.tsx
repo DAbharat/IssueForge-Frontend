@@ -2,6 +2,7 @@
 
 import { Check, Mail, X } from "lucide-react"
 import type { WorkspaceInvitation } from "@/services/invitations.service"
+import { toast } from "@/components/ui/toast"
 
 type PendingWorkspaceInvitationsProps = {
   invitations: WorkspaceInvitation[]
@@ -20,6 +21,22 @@ export default function PendingWorkspaceInvitations({
   onAccept,
   onDecline,
 }: PendingWorkspaceInvitationsProps) {
+  async function handleAccept(invitationId: string | number) {
+    try {
+      await onAccept(invitationId)
+    } catch {
+      // toast is dispatched by usePendingInvitations
+    }
+  }
+
+  async function handleDecline(invitationId: string | number) {
+    try {
+      await onDecline(invitationId)
+    } catch {
+      // toast is dispatched by usePendingInvitations
+    }
+  }
+
   return (
     <section className="rounded-xl border border-[#27272A] bg-[#0E0E11] p-5">
       <div className="flex items-start gap-3">
@@ -30,7 +47,6 @@ export default function PendingWorkspaceInvitations({
         </div>
       </div>
 
-      {error && <p className="mt-4 rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
       {isLoading ? (
         <p className="mt-5 text-xs text-[#71717A]">Loading invitations…</p>
       ) : invitations.length === 0 ? (
@@ -49,8 +65,8 @@ export default function PendingWorkspaceInvitations({
                   {inviter && <p className="mt-1 text-xs text-[#94A3B8]">Invited by {inviter}</p>}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <button type="button" disabled={isUpdating} onClick={() => onDecline(invitation.id)} className="inline-flex items-center gap-1.5 rounded-md border border-[#27272A] bg-transparent px-3 py-2 text-xs font-medium text-[#94A3B8] transition-colors hover:border-red-500/30 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40"><X className="h-3.5 w-3.5" />Decline</button>
-                  <button type="button" disabled={isUpdating} onClick={() => onAccept(invitation.id)} className="inline-flex items-center gap-1.5 rounded-md border border-[#3F3F46] bg-[#27272A] px-3 py-2 text-xs font-medium text-[#E2E8F0] transition-colors hover:bg-[#3F3F46] disabled:cursor-not-allowed disabled:opacity-40"><Check className="h-3.5 w-3.5" />Accept</button>
+                  <button type="button" disabled={isUpdating} onClick={() => handleDecline(invitation.id)} className="inline-flex items-center gap-1.5 rounded-md border border-[#27272A] bg-transparent px-3 py-2 text-xs font-medium text-[#94A3B8] transition-colors hover:border-red-500/30 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40"><X className="h-3.5 w-3.5" />Decline</button>
+                  <button type="button" disabled={isUpdating} onClick={() => handleAccept(invitation.id)} className="inline-flex items-center gap-1.5 rounded-md border border-[#3F3F46] bg-[#27272A] px-3 py-2 text-xs font-medium text-[#E2E8F0] transition-colors hover:bg-[#3F3F46] disabled:cursor-not-allowed disabled:opacity-40"><Check className="h-3.5 w-3.5" />Accept</button>
                 </div>
               </div>
             )

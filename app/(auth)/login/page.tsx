@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import Login from "@/components/auth/login"
 import { useAuth } from "@/hooks/use-auth"
 import { login } from "@/services/account.service"
+import { toast } from "@/components/ui/toast"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -36,9 +37,12 @@ export default function LoginPage() {
         refreshToken,
       })
 
+      toast.success("Welcome back!", "Signed in successfully.")
       router.push("/profile")
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "An error occurred while logging in user")
+      const message = error instanceof Error ? error.message : "An error occurred while logging in user"
+      setErrorMessage(message)
+      toast.error("Sign in failed", message)
     } finally {
       setIsSubmitting(false)
     }

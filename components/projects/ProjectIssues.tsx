@@ -1,8 +1,9 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { ChevronDown, Filter, Plus, Search, Check } from "lucide-react"
 import type { Label } from "@/services/labels.service"
+import { useDebounce } from "@/hooks/use-debounce"
 
 export type ProjectIssueItem = {
   id?: string | number
@@ -123,15 +124,21 @@ export default function ProjectIssues({
   onClick,
 }: ProjectIssuesProps) {
   const [searchValue, setSearchValue] = useState("")
+  const debouncedSearch = useDebounce(searchValue, 300)
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
 
+  // Debounced callback to notify parent without spamming
+  useEffect(() => {
+    onSearchChange?.(debouncedSearch)
+  }, [debouncedSearch, onSearchChange])
+
   const filteredIssues = useMemo(() => {
-    const query = searchValue.trim().toLowerCase()
+    const query = debouncedSearch.trim().toLowerCase()
 
     const list = query
       ? issues.filter((issue) => {
           const haystack = `${issue.title} ${issue.description ?? ""}`.toLowerCase()
-          return haystack.includes(query)
+          return haystack.includes(query) || String(issue.id).includes(query)
         })
       : issues
 
@@ -147,7 +154,7 @@ export default function ProjectIssues({
     })
 
     return sorted
-  }, [issues, searchValue, sortOrder])
+  }, [issues, debouncedSearch, sortOrder])
 
   const groupedIssues = {
     todo: filteredIssues.filter((i) => i.status === "todo"),
@@ -157,7 +164,6 @@ export default function ProjectIssues({
 
   const handleSearch = (value: string) => {
     setSearchValue(value)
-    onSearchChange?.(value)
   }
 
   const handleSort = () => {
