@@ -5,7 +5,7 @@ import type { FormEvent } from "react"
 import { useRouter } from "next/navigation"
 
 import Register from "@/components/auth/register"
-import { register } from "@/services/account.service"
+import { register, getGoogleOAuthUrl } from "@/services/account.service"
 import { toast } from "@/components/ui/toast"
 
 export default function RegisterPage() {
@@ -53,6 +53,11 @@ export default function RegisterPage() {
     }
   }
 
+  function handleGoogleSignUp() {
+    setIsSubmitting(true)
+    window.location.href = getGoogleOAuthUrl()
+  }
+
   return (
     <Register
       firstName={firstName}
@@ -72,6 +77,7 @@ export default function RegisterPage() {
       onAcceptedTermsChange={setAcceptedTerms}
       onTogglePassword={() => setShowPassword((current) => !current)}
       onSubmit={handleSubmit}
+      onGoogleSignUp={handleGoogleSignUp}
     />
   )
-}
+}

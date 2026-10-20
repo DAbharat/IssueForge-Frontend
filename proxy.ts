@@ -5,9 +5,12 @@ const publicRoutes = [
     "/",
     "/login",
     "/register",
+    "/auth/callback",
+    "/callback",
     "/api/login",
     "/api/register",
     "/api/auth/refresh",
+    "/api/auth/google",
 ];
 
 const authRoutes = [

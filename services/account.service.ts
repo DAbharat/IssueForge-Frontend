@@ -69,3 +69,42 @@ export async function searchUsers(query: string = "", signal?: AbortSignal) {
         return [];
     }
 }
+
+export type GoogleLoginResponse = {
+    access_token?: string;
+    accessToken?: string;
+    refresh_token?: string;
+    refreshToken?: string;
+    user: {
+        id: number;
+        username: string;
+        fullname: string;
+        email: string;
+        workspaces: Array<{
+            id: number;
+            name: string;
+            role: string;
+            created_at?: string;
+        }>;
+    };
+};
+
+export function getGoogleOAuthUrl(): string {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081";
+    return `${baseUrl}/api/auth/google`;
+}
+
+export async function handleGoogleCallback(code: string, state: string): Promise<GoogleLoginResponse> {
+    try {
+        const response = await axiosClient.get<GoogleLoginResponse>(`/api/auth/google/callback`, {
+            params: { code, state },
+            withCredentials: true,
+        });
+        return response.data;
+    } catch (error) {
+        const axiosError = error as AxiosError<ApiResponse & { error?: string }>;
+        const message = axiosError.response?.data?.error || axiosError.response?.data?.message || axiosError.message;
+        console.error("Error completing Google sign-in: ", message);
+        throw new Error(message || "An error occurred while completing Google sign-in");
+    }
+}

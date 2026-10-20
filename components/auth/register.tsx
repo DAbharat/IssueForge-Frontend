@@ -26,6 +26,7 @@ type RegisterViewProps = {
     onTogglePassword: () => void
     onAcceptedTermsChange: (checked: boolean) => void
     onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
+    onGoogleSignUp?: () => void
 }
 
 export default function RegisterView({
@@ -46,6 +47,7 @@ export default function RegisterView({
     onTogglePassword,
     onAcceptedTermsChange,
     onSubmit,
+    onGoogleSignUp,
 }: RegisterViewProps) {
     return (
         <main className="flex min-h-screen items-center justify-center bg-[#000000] px-4 py-4 text-[#E2E8F0] sm:px-6 lg:px-8">
@@ -193,7 +195,9 @@ export default function RegisterView({
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="h-10 w-full rounded-sm border-[#222631] bg-transparent text-[#E2E8F0] hover:bg-[#171A21] hover:text-[#E2E8F0] flex items-center justify-center gap-2.5 cursor-pointer font-normal"
+                                    onClick={onGoogleSignUp}
+                                    disabled={isSubmitting}
+                                    className="h-10 w-full rounded-sm border-[#222631] bg-transparent text-[#E2E8F0] hover:bg-[#171A21] hover:text-[#E2E8F0] flex items-center justify-center gap-2.5 cursor-pointer font-normal disabled:cursor-not-allowed disabled:opacity-70"
                                 >
                                     <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4 shrink-0">
                                         <path

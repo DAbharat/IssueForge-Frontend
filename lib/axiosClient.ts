@@ -99,7 +99,8 @@ axiosClient.interceptors.response.use(
     const isAuthEndpoint =
       originalRequest?.url?.includes("/api/login") ||
       originalRequest?.url?.includes("/api/register") ||
-      originalRequest?.url?.includes("/api/auth/refresh")
+      originalRequest?.url?.includes("/api/auth/refresh") ||
+      originalRequest?.url?.includes("/api/auth/google")
 
     if (error.response?.status !== 401 || !originalRequest || originalRequest._retry || isAuthEndpoint) {
       return Promise.reject(error)

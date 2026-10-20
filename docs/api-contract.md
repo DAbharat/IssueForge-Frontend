@@ -120,6 +120,91 @@ Response (200 OK):
 }
 ```
 
+### 4a) GET /api/auth/google
+Auth required: No  
+Rate limit: 3 requests / minute (`authRateLimit`)
+
+Initiates the Google OAuth 2.0 / OpenID Connect authorization code flow.
+
+Response (302 Found):
+- Redirects the browser to Google's OAuth consent screen:
+  `https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=...&response_type=code&scope=openid+email+profile&state=...`
+- Response Headers:
+  - `Location`: Google consent screen URL
+  - `Set-Cookie`: `google_oauth_state=<state>; Path=/api/auth/google; Max-Age=300; HttpOnly; Secure; SameSite=Lax`
+
+Behavior & Details:
+- The backend generates a cryptographically secure 32-byte base64-url encoded CSRF `state` parameter.
+- Sets an HTTP-only, secure, SameSite=Lax cookie named `google_oauth_state` with path `/api/auth/google`, valid for 5 minutes (300 seconds).
+- Scopes requested: `openid`, `email`, `profile`.
+
+### 4b) GET /api/auth/google/callback
+Auth required: No  
+Rate limit: None
+
+OAuth 2.0 callback endpoint invoked by Google after the user completes consent. Validates the CSRF state token against the `google_oauth_state` cookie, exchanges the authorization code with Google for tokens, verifies the OpenID Connect ID token, provisions or links the user account in PostgreSQL, generates a JWT access token and Redis refresh token, and returns the session payload.
+
+Query params:
+- `code` (string, required): The authorization code issued by Google.
+- `state` (string, required): The CSRF state token issued by `/api/auth/google`. Must match the `google_oauth_state` cookie value.
+- `error` (string, optional): Provider error code if the user canceled consent or Google encountered an error.
+
+Cookies:
+- `google_oauth_state` (required): Cookie set during the initiation step. Deleted upon callback processing (`Max-Age: -1`).  
+  *Note: The cookie path is `/api/auth/google`, so the browser automatically supplies it when visiting `/api/auth/google/callback`.*
+
+User Resolution & Account Linking:
+1. **Existing Google User**: If a user record with a matching `google_sub` exists in the database, the backend authenticates the user directly.
+2. **Account Linking**: If no user matches `google_sub`, but an active account with the Google verified email exists, the backend automatically links the account by binding `google_sub` to that user and authenticates them.
+3. **Automatic User Provisioning**: If neither exists:
+   - A unique username is generated from the email local part (sanitized to alphanumeric, `_`, `.`, bounded between 3 and 20 characters) appended with a random 5-hex character suffix (`base_xxxxx`).
+   - `fullname` is extracted from Google claims `name` (or `given_name + family_name`, fallback to generated username).
+   - Password hash is set to placeholder `!oidc-no-password!` (direct password login is disabled).
+   - The user record is created in PostgreSQL with `google_sub`.
+4. **Session Generation**:
+   - Generates signed JWT access token (`JWTSecret`).
+   - Generates crypto-random refresh token stored in Redis with configured TTL (`REFRESH_TOKEN_TTL`).
+   - Retrieves user's workspace memberships.
+
+Response (200 OK):
+
+```json
+{
+  "access_token": "eyJhbGciOi...",
+  "refresh_token": "eyJhbGciOi...",
+  "user": {
+    "id": 1,
+    "username": "janedoe_4f92a",
+    "fullname": "Jane Doe",
+    "email": "jane@example.com",
+    "workspaces": [
+      {
+        "id": 12,
+        "name": "Core Team",
+        "role": "owner"
+      }
+    ]
+  }
+}
+```
+
+Error responses:
+- `400 Bad Request`:
+  - `{"error": "invalid oauth state"}` (cookie missing, state missing, or state mismatch)
+  - `{"error": "missing authorization code"}`
+- `401 Unauthorized`:
+  - `{"error": "google sign-in was not completed"}` (when `error` query param is present)
+  - `{"error": "google sign-in failed"}` (token exchange failure, ID token verification failure, or unverified email)
+  - `{"error": "invalid credentials"}`
+- `403 Forbidden`:
+  - `{"error": "forbidden"}`
+- `409 Conflict`:
+  - `{"error": "duplicate email"}` (email conflict during account creation)
+  - `{"error": "duplicate username"}` (username collision during auto-generation)
+  - `{"error": "google account is already linked"}` (Google account is bound to another user)
+- `500 Internal Server Error`:
+  - `{"error": "internal server error"}`
+
 ---
 
 ## User endpoints
@@ -899,3 +984,6 @@ Response (200 OK): array of archived attachment objects (`id`, `issue_id`, `issu
 - Several endpoints accept `PATCH` requests with partial objects, meaning only the fields you want to update need to be sent.
 - Query params and path params are required exactly as shown in the route definition.
 - For upload endpoints, use `multipart/form-data`; for all other endpoints use `application/json`.
+- Google OAuth endpoints operate under `/api/auth/google*`. The initiation endpoint sets an HTTP-only state cookie on path `/api/auth/google`, and the callback endpoint validates it.
+- Backend CORS configuration enables credentials (`AllowCredentials: true`) to support cross-origin authentication requests from allowed frontend origins (e.g. `http://localhost:3000`, `https://issue-forge-frontend.vercel.app`).
+

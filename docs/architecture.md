@@ -92,15 +92,19 @@ Example:
 
 ```text
 services/
-├── accounts.service.ts                 # User/account related calls
+├── account.service.ts                  # User/account and auth calls (register, login, me, search, Google OAuth)
 ├── workspaces.service.ts               # Workspace related calls
 ├── projects.service.ts                 # Project related calls
 ├── issues.service.ts                   # Issue related calls
 ├── comments.service.ts                 # Comment related calls
 ├── labels.service.ts                   # Label related calls
-├── workspace_members.service.ts        # Workspace member related calls
-├── project_members.service.ts          # Project member related calls
-└── activities.service.ts               # Activity related calls
+├── workspaceMembers.service.ts         # Workspace member related calls
+├── projectMembers.service.ts           # Project member related calls
+├── activities.service.ts               # Activity related calls
+├── attachments.service.ts              # Issue & comment attachment calls
+├── invitations.service.ts              # Workspace invitation calls
+└── archive.service.ts                  # Archive & soft-delete restore calls
+
 ```
 
 Do not make API requests directly from components.
@@ -365,3 +369,123 @@ Type definition           → Feature types / shared types
 ```
 
 Always prefer **separation of responsibility, reuse, and consistency** over putting logic in the nearest file.
+
+---
+
+## Authentication & OAuth Architecture
+
+IssueForge supports dual-mode authentication:
+1. **Password Authentication**: Email and password credentials (`POST /api/register`, `POST /api/login`).
+2. **Google OAuth 2.0 / OpenID Connect**: Federated sign-in and automated account linking using Google Identity Services (`GET /api/auth/google`, `GET /api/auth/google/callback`).
+
+### 1. OAuth 2.0 / OIDC Flow Architecture
+
+The backend handles the OAuth 2.0 authorization code exchange and OpenID Connect ID token verification securely on the server.
+
+```text
+User                      Browser                    Backend API (Go)              Google Identity
+ │                           │                              │                             │
+ │── Click "Google Sign In"─>│                              │                             │
+ │                           │── GET /api/auth/google ─────>│                             │
+ │                           │                              │ Generates 32-byte CSRF state│
+ │                           │                              │ Sets google_oauth_state     │
+ │                           │                              │ (HttpOnly, Path=/api/auth/..)
+ │                           │<── 302 Redirect ─────────────│                             │
+ │                           │                              │                             │
+ │                           │── Follow 302 redirect ────────────────────────────────────>│
+ │                           │   (to accounts.google.com)   │                             │
+ │── Authenticate & Consent ─────────────────────────────────────────────────────────────>│
+ │                           │<── 302 Redirect with code & state ─────────────────────────│
+ │                           │                                                            │
+ │                           │── GET /api/auth/google/callback?code=...&state=... ───────>│
+ │                           │   (Browser attaches google_oauth_state cookie)             │
+ │                           │                              │                             │
+ │                           │                              │── POST /token (exchange) ──>│
+ │                           │                              │<── Returns tokens & IDToken─│
+ │                           │                              │                             │
+ │                           │                              │ Verifies ID Token (OIDC)    │
+ │                           │                              │ Resolves User in PostgreSQL │
+ │                           │                              │ Generates JWT Access Token  │
+ │                           │                              │ Stores Refresh Token (Redis)│
+ │                           │<── 200 OK (LoginUserResponse)│                             │
+ │                           │                              │                             │
+ │── Redirect to App / Auth ─│                              │                             │
+```
+
+### 2. Layered Responsibilities (Code Making Flow)
+
+To maintain clean separation of concerns, the OAuth implementation strictly adheres to the frontend architecture:
+
+```text
+Presentational Component (Dumb)
+       ↓ (Emits onClick event)
+Page / Container Layer
+       ↓ (Coordinates flow / redirect)
+Hook Layer (useAuth)
+       ↓ (Manages tokens & session state)
+Service Layer (account.service.ts)
+       ↓
+Backend API
+```
+
+#### Layer Breakdown:
+
+1. **Presentational Components (`components/auth/login.tsx`, `components/auth/register.tsx`)**:
+   - Render the Google brand button ("Sign in with Google" / "Sign up with Google") and UI layout.
+   - **Must remain dumb**: No direct API calls, no token handling, no direct `window.location` manipulation.
+   - Accept an `onGoogleSignIn` / `onGoogleSignUp` callback prop:
+     ```tsx
+     <Button type="button" onClick={onGoogleSignIn}>
+       <GoogleIcon /> Sign in with Google
+     </Button>
+     ```
+
+2. **Page / Container Layer (`app/(auth)/login/page.tsx`, `app/(auth)/register/page.tsx`, or OAuth callback handler)**:
+   - Coordinates user interaction with the application lifecycle.
+   - When the user clicks the Google button, initiates the flow by redirecting the browser to the backend OAuth entrypoint (`${API_BASE_URL}/api/auth/google`).
+   - If processing the callback in frontend (or when the backend returns the `LoginUserResponse`), receives the tokens, passes them to `useAuth.setAuthTokens()`, displays success/error toasts, and navigates the user to their workspace or `/profile`.
+
+3. **Hook / State Layer (`hooks/use-auth.ts`)**:
+   - Stores session state (`accessToken`, `refreshToken`, `isAuthenticated`).
+   - Syncs tokens to both `localStorage` and `document.cookie` (with appropriate `maxAge` and `SameSite=Lax`) to ensure compatibility with client-side requests and Next.js SSR / route middleware.
+   - Exposes `setAuthTokens`, `clearAuthTokens`, and `loadTokens`.
+
+4. **Service Layer (`services/account.service.ts`)**:
+   - Encapsulates authentication backend interactions:
+     - `getGoogleAuthUrl()`: Returns the full backend URL (`${API_BASE_URL}/api/auth/google`) for initiating the OAuth handshake.
+     - `handleGoogleCallback(code, state)`: Communicates with `GET /api/auth/google/callback` via `axiosClient` with `withCredentials: true` when handled asynchronously.
+
+### 3. Backend Integration & Data Model Semantics
+
+1. **Database Schema (`users.google_sub`)**:
+   - Added via migration `000021_add_google_sub_to_users.up.sql`.
+   - Has a partial unique index:
+     ```sql
+     CREATE UNIQUE INDEX users_google_sub_key
+         ON users (google_sub)
+         WHERE google_sub IS NOT NULL AND deleted_at IS NULL;
+     ```
+   - Protects against duplicate Google identity bindings across multiple user rows while ignoring soft-deleted records.
+
+2. **Account Linking Rules**:
+   - **Identity Match**: When a user logs in with Google, the backend first queries `users` by `google_sub`. If found, the session is created immediately.
+   - **Automatic Account Linking**: If no record matches `google_sub`, the backend queries by verified email (`claims.Email`). If an existing email/password account matches, the backend links Google by running `BindGoogleSub(ctx, existingUser.ID, &claims.Sub)`. This allows existing users to seamlessly switch to Google Sign-In without creating duplicate accounts or losing project/workspace data.
+   - **Auto-Provisioning New Users**: If neither `google_sub` nor `email` exists:
+     - Automatically generates a unique username by sanitizing the email prefix (`base = email[0:at]`) and appending a unique hex suffix (`base_xxxxx`).
+     - Uses Google profile `name` or `given_name + family_name` for `fullname`.
+     - Assigns a placeholder password hash: `!oidc-no-password!`. Users who sign up via Google cannot log in with a password unless they explicitly configure one.
+     - Creates the user via `CreateOIDCUser`.
+
+3. **State Token & CSRF Security**:
+   - The backend generates a 32-byte cryptographically secure pseudo-random state string (`crypto/rand`).
+   - The state is stored in an HTTP-only, Secure, SameSite=Lax cookie:
+     ```http
+     Set-Cookie: google_oauth_state=<state>; Path=/api/auth/google; Max-Age=300; HttpOnly; Secure; SameSite=Lax
+     ```
+   - The callback endpoint (`/api/auth/google/callback`) verifies that the incoming `state` query parameter strictly equals the `google_oauth_state` cookie value before exchanging the authorization code, and deletes the cookie immediately.
+
+4. **CORS & Credentials**:
+   - Because OAuth state cookies and session credentials travel between the frontend and the Go API server, CORS configuration on the backend enforces:
+     - `AllowCredentials: true`
+     - Validated allowed origins (`http://localhost:3000`, `http://localhost:4000`, `https://issue-forge-frontend.vercel.app`, or `CORS_ALLOWED_ORIGINS`).
+
