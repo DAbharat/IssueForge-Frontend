@@ -1,11 +1,17 @@
 "use client"
 
 import { useState } from "react"
-import { RotateCcw } from "lucide-react"
+import { MoreHorizontal, RotateCcw } from "lucide-react"
 import type { ArchivedProject } from "@/services/archive.service"
 import { formatArchiveDate } from "./archive-utils"
 import RestoreConfirmationDialog from "./RestoreConfirmationDialog"
 import ArchiveEmptyState from "./ArchiveEmptyState"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 type ArchivedProjectsTableProps = {
     projects: ArchivedProject[]
@@ -97,15 +103,33 @@ export default function ArchivedProjectsTable({
                                         {formatArchiveDate(project.deleted_at)}
                                     </td>
                                     <td className="whitespace-nowrap py-3.5 pl-3 pr-4 text-right">
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedProject(project)}
-                                            disabled={isRestoring}
-                                            className="inline-flex items-center gap-1.5 rounded-md border border-[#27272A] bg-[#18181B] px-2.5 py-1 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46] hover:bg-[#27272A] disabled:opacity-40"
-                                        >
-                                            <RotateCcw className="h-3 w-3" />
-                                            <span>{isBeingRestored ? "Restoring…" : "Restore"}</span>
-                                        </button>
+                                        {isBeingRestored ? (
+                                            <div className="inline-flex h-7 w-7 items-center justify-center">
+                                                <RotateCcw className="h-3.5 w-3.5 animate-spin text-[#94A3B8]" />
+                                            </div>
+                                        ) : (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger
+                                                    disabled={isRestoring}
+                                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#27272A] bg-[#18181B] text-[#94A3B8] transition-colors hover:border-[#3F3F46] hover:bg-[#27272A] hover:text-[#E2E8F0] focus:outline-none disabled:opacity-40"
+                                                    title="Options"
+                                                >
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent
+                                                    align="end"
+                                                    className="min-w-[140px] rounded-lg border border-[#27272A] bg-[#101012] p-1 text-[#E2E8F0] shadow-xl"
+                                                >
+                                                    <DropdownMenuItem
+                                                        onClick={() => setSelectedProject(project)}
+                                                        className="flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-[#E2E8F0] hover:bg-[#18181B] focus:bg-[#18181B] focus:text-[#E2E8F0]"
+                                                    >
+                                                        <RotateCcw className="h-3.5 w-3.5 text-[#94A3B8]" />
+                                                        <span>Restore item</span>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
                                     </td>
                                 </tr>
                             )

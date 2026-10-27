@@ -1008,6 +1008,16 @@ Auth required: Yes
 
 Response (200 OK): attachment deletion result
 
+### 64b) POST /api/attachments/{attachmentID}/restore
+Auth required: Yes (Uploader or Project Lead)
+
+Response (200 OK):
+```json
+{
+  "attachmentID": 12
+}
+```
+
 ---
 
 ## Archive endpoints
@@ -1134,6 +1144,27 @@ Response (200 OK):
     "username": "bhardemo27_9f7c5",
     "fullname": "bhardemo",
     "created_at": "2026-10-20T20:43:48.07822+05:30"
+  }
+]
+```
+
+### 73b) GET /api/workspaces/{workspaceID}/invitations/rejected
+Auth required: Yes (Admin/Owner only)
+
+Returns declined and cancelled invitations sent by this workspace.
+
+Response (200 OK):
+```json
+[
+  {
+    "id": 3,
+    "workspace_id": 5,
+    "invited_user_id": 5,
+    "username": "benchmark_user_03",
+    "fullname": "Benchmark User 03",
+    "status": "DECLINED",
+    "created_at": "2026-10-19T13:22:02.912093+05:30",
+    "responded_at": "2026-10-27T14:46:55.416927+05:30"
   }
 ]
 ```

@@ -1,18 +1,19 @@
 "use client"
 
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogCancel,
+} from "@/components/ui/alert-dialog"
 
 type RestoreConfirmationDialogProps = {
     isOpen: boolean
     onOpenChange: (open: boolean) => void
-    itemType: "workspace" | "project" | "issue"
+    itemType: "workspace" | "project" | "issue" | "attachment"
     itemName: string
     onConfirm: () => void
     isRestoring: boolean
@@ -29,37 +30,36 @@ export default function RestoreConfirmationDialog({
     const typeLabel = itemType.charAt(0).toUpperCase() + itemType.slice(1)
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md border-[#27272A] bg-[#0E0E11] text-[#E2E8F0]">
-                <DialogHeader>
-                    <DialogTitle className="text-base font-semibold text-[#E2E8F0]">
+        <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
+            <AlertDialogContent className="max-w-md border-[#27272A] bg-[#0E0E11] text-[#E2E8F0] shadow-2xl">
+                <AlertDialogHeader>
+                    <AlertDialogTitle className="text-base font-semibold text-[#E2E8F0]">
                         Restore {typeLabel}?
-                    </DialogTitle>
-                    <DialogDescription className="text-xs leading-5 text-[#94A3B8]">
-                        Are you sure you want to restore <span className="font-semibold text-[#E2E8F0]">"{itemName}"</span>?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-xs leading-5 text-[#94A3B8]">
+                        Are you sure you want to restore{" "}
+                        <span className="font-semibold text-[#E2E8F0]">"{itemName}"</span>?
                         This item will be removed from the Archive and restored to its normal active views.
-                    </DialogDescription>
-                </DialogHeader>
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
 
-                <DialogFooter className="mt-4 flex gap-2 sm:justify-end">
-                    <button
-                        type="button"
-                        onClick={() => onOpenChange(false)}
+                <AlertDialogFooter className="mt-4 flex flex-row items-center justify-end gap-2 border-t border-[#27272A] bg-[#09090B] p-3 -mx-4 -mb-4 rounded-b-xl">
+                    <AlertDialogCancel
                         disabled={isRestoring}
-                        className="rounded-md border border-[#27272A] bg-[#18181B] px-3 py-1.5 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46]"
+                        className="rounded-md border border-[#27272A] bg-[#18181B] px-3.5 py-1.5 text-xs font-medium text-[#E2E8F0] transition-colors hover:border-[#3F3F46] hover:bg-[#27272A]"
                     >
                         Cancel
-                    </button>
+                    </AlertDialogCancel>
                     <button
                         type="button"
                         onClick={onConfirm}
                         disabled={isRestoring}
-                        className="rounded-md border border-[#DDE1E5] bg-[#DDE1E5] px-3 py-1.5 text-xs font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+                        className="inline-flex items-center justify-center rounded-md border border-[#DDE1E5] bg-[#DDE1E5] px-3.5 py-1.5 text-xs font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
                     >
-                        {isRestoring ? "Restoring…" : "Restore"}
+                        {isRestoring ? "Restoring…" : "Yes"}
                     </button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     )
 }

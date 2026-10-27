@@ -16,6 +16,7 @@ import {
 import { restoreDeletedWorkspace } from "@/services/workspaces.service"
 import { restoreProject } from "@/services/projects.service"
 import { restoreDeletedIssue } from "@/services/issues.service"
+import { restoreAttachment } from "@/services/attachments.service"
 import { useDebounce } from "@/hooks/use-debounce"
 import { toast } from "@/components/ui/toast"
 
@@ -123,7 +124,7 @@ export function useArchive() {
     }, [activeTab, debouncedSearch, fetchTabData])
 
     const handleRestore = useCallback(
-        async (type: "workspace" | "project" | "issue", id: string | number, name?: string) => {
+        async (type: "workspace" | "project" | "issue" | "attachment", id: string | number, name?: string) => {
             if (isRestoring) return
 
             setIsRestoring(true)
@@ -138,6 +139,8 @@ export function useArchive() {
                     await restoreProject(id)
                 } else if (type === "issue") {
                     await restoreDeletedIssue(id)
+                } else if (type === "attachment") {
+                    await restoreAttachment(id)
                 }
 
                 const msg = `${name ? `"${name}"` : "Item"} restored successfully.`

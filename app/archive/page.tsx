@@ -126,6 +126,9 @@ export default function ArchivePage() {
                         {activeTab === "Attachments" && (
                             <ArchivedAttachmentsTable
                                 attachments={attachments}
+                                isRestoring={isRestoring}
+                                restoringId={restoringId}
+                                onRestore={(id, name) => handleRestore("attachment", id, name)}
                                 isSearching={isSearching}
                                 onClearSearch={() => setSearchQuery("")}
                             />

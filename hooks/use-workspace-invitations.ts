@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import {
     listPendingWorkspaceInvitationsForWorkspace,
+    listRejectedWorkspaceInvitationsForWorkspace,
     cancelInvitation,
     createWorkspaceInvitation,
     type WorkspaceInvitation,
@@ -62,17 +63,45 @@ export function useWorkspaceInvitations(workspaceId: string | number | null) {
         setError(null)
 
         try {
-            const [pendingList, membersList] = await Promise.all([
+            const [pendingList, membersList, rejectedBackendList] = await Promise.all([
                 listPendingWorkspaceInvitationsForWorkspace(workspaceId).catch(() => []),
                 listWorkspaceMembers(workspaceId).catch(() => []),
+                listRejectedWorkspaceInvitationsForWorkspace(workspaceId).catch(() => []),
             ])
 
-            setPendingInvitations(Array.isArray(pendingList) ? pendingList : [])
-            setAcceptedMembers(Array.isArray(membersList) ? membersList : [])
+            const pending = Array.isArray(pendingList) ? pendingList : []
+            const members = Array.isArray(membersList) ? membersList : []
+            const backendRejected = Array.isArray(rejectedBackendList) ? rejectedBackendList : []
 
-            // Load rejected items
+            setPendingInvitations(pending)
+            setAcceptedMembers(members)
+
+            // Reconcile rejected items: combine backend rejected items with local persisted,
+            // then prune any user that currently has an active pending invite or is already an accepted member
+            const pendingUserIds = new Set(pending.map((i) => String(i.invited_user_id)))
+            const acceptedUserIds = new Set(members.map((m) => String(m.user_id ?? m.id)))
+
             const persisted = loadPersistedRejected()
-            setRejectedInvitations(persisted)
+            const allRejected = [...backendRejected, ...persisted]
+
+            // Deduplicate by invited_user_id (latest wins)
+            const seenUserIds = new Set<string>()
+            const deduplicated: WorkspaceInvitation[] = []
+            for (const item of allRejected) {
+                const uid = String(item.invited_user_id ?? item.id)
+                if (!seenUserIds.has(uid)) {
+                    seenUserIds.add(uid)
+                    deduplicated.push(item)
+                }
+            }
+
+            const reconciledRejected = deduplicated.filter((i) => {
+                const uid = String(i.invited_user_id ?? i.id)
+                return !pendingUserIds.has(uid) && !acceptedUserIds.has(uid)
+            })
+
+            setRejectedInvitations(reconciledRejected)
+            savePersistedRejected(reconciledRejected)
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to load invitations.")
         } finally {

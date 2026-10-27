@@ -69,6 +69,16 @@ export async function listPendingWorkspaceInvitationsForWorkspace(workspaceId: s
     }
 }
 
+export async function listRejectedWorkspaceInvitationsForWorkspace(workspaceId: string | number) {
+    try {
+        const response = await axiosClient.get<WorkspaceInvitation[]>(`/api/workspaces/${workspaceId}/invitations/rejected`);
+        return response.data;
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "An error occurred while listing rejected workspace invitations."));
+    }
+}
+
+
 export async function acceptInvitation(invitationId: string | number) {
     try {
         const response = await axiosClient.post<WorkspaceInvitation>(`/api/invitations/${invitationId}/accept`);

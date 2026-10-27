@@ -70,3 +70,13 @@ export async function deleteAttachment(attachmentId: string | number) {
         throw new Error(getErrorMessage(error, "An error occurred while deleting the attachment."));
     }
 }
+
+export async function restoreAttachment(attachmentId: string | number) {
+    try {
+        const response = await axiosClient.post<{ attachmentID: number }>(`/api/attachments/${attachmentId}/restore`);
+        return response.data;
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "An error occurred while restoring the attachment."));
+    }
+}
+
