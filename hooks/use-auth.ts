@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useMemo, useState } from "react"
+import { logout as apiLogout } from "@/services/account.service"
 
 type AuthTokens = {
   accessToken: string | null
@@ -23,7 +24,9 @@ function setCookie(name: string, value: string, days: number = 7) {
 
 function deleteCookie(name: string) {
   if (typeof document === "undefined") return
-  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`
+  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0; SameSite=Lax`
+  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0`
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0`
 }
 
 export function useAuth() {
@@ -95,12 +98,30 @@ export function useAuth() {
     window.localStorage.removeItem("access_token")
     window.localStorage.removeItem("refreshToken")
     window.localStorage.removeItem("refresh_token")
+    window.localStorage.removeItem("user")
+    window.localStorage.removeItem("activeWorkspaceId")
+    try {
+      window.sessionStorage.clear()
+    } catch {
+      // ignore
+    }
     deleteCookie("accessToken")
     deleteCookie("access_token")
     deleteCookie("refreshToken")
     deleteCookie("refresh_token")
     setTokens({ accessToken: null, refreshToken: null })
   }, [])
+
+  const logout = useCallback(async () => {
+    const refreshToken = tokens.refreshToken ?? readStorageToken("refreshToken") ?? readStorageToken("refresh_token")
+    try {
+      await apiLogout(refreshToken || undefined)
+    } catch (error) {
+      console.warn("Logout request error on server:", error)
+    } finally {
+      clearAuthTokens()
+    }
+  }, [tokens.refreshToken, clearAuthTokens])
 
   const isAuthenticated = useMemo(() => Boolean(tokens.accessToken), [tokens.accessToken])
 
@@ -110,5 +131,7 @@ export function useAuth() {
     loadTokens,
     setAuthTokens,
     clearAuthTokens,
+    logout,
   }
 }
+

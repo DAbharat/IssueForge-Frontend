@@ -43,6 +43,9 @@ export function usePendingInvitations() {
       setInvitations((current) => current.filter((invitation) => String(invitation.id) !== String(invitationId)))
       if (isAccept) {
         toast.success("Invitation accepted", `You have successfully joined ${wsName}!`)
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("workspace-updated"))
+        }
       } else {
         toast.info("Invitation declined", `Invitation to join ${wsName} was declined.`)
       }

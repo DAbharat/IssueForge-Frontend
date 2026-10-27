@@ -51,6 +51,7 @@ export type ProfileUser = {
   id?: string | number
   fullname?: string
   username?: string
+  email?: string
   created_at?: string
   workspaces?: ProfileWorkspace[]
   projects?: ProfileProject[]

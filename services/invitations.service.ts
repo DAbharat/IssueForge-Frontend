@@ -11,6 +11,7 @@ export type WorkspaceInvitation = {
     fullname?: string;
     workspace_name?: string;
     inviter_username?: string;
+    invited_username?: string;
     inviter_fullname?: string;
     status?: string;
     created_at?: string;

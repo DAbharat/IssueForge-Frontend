@@ -20,7 +20,9 @@ function setCookie(name: string, value: string, days: number = 7) {
 
 function deleteCookie(name: string) {
   if (typeof document === "undefined") return
-  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`
+  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0; SameSite=Lax`
+  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0`
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0`
 }
 
 function clearAuthTokens() {
@@ -32,6 +34,13 @@ function clearAuthTokens() {
   window.localStorage.removeItem("access_token")
   window.localStorage.removeItem("refreshToken")
   window.localStorage.removeItem("refresh_token")
+  window.localStorage.removeItem("user")
+  window.localStorage.removeItem("activeWorkspaceId")
+  try {
+    window.sessionStorage.clear()
+  } catch {
+    // ignore
+  }
   deleteCookie("accessToken")
   deleteCookie("access_token")
   deleteCookie("refreshToken")

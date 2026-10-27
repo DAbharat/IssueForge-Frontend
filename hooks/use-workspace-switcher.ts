@@ -39,6 +39,17 @@ export function useWorkspaceSwitcher() {
         }
     }, [profile])
 
+    // Listen to workspace-updated custom event
+    useEffect(() => {
+        const handleWorkspaceUpdated = () => {
+            refetch()
+        }
+        window.addEventListener("workspace-updated", handleWorkspaceUpdated)
+        return () => {
+            window.removeEventListener("workspace-updated", handleWorkspaceUpdated)
+        }
+    }, [refetch])
+
     // Resolve the active workspace once workspaces are available
     useEffect(() => {
         if (workspaces.length === 0) return

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useCallback, useEffect, useRef, useState } from "react"
-import { Bell, ChevronLeft, Search, User2, X, Check } from "lucide-react"
+import { Bell, ChevronLeft, Search, User2, X, Check, LogOut } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -16,8 +16,25 @@ import {
     cancelInvitation,
     listPendingWorkspaceInvitationsForWorkspace,
 } from "@/services/invitations.service"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { useWorkspaceSwitcher } from "@/hooks/use-workspace-switcher"
 import { useDebounce } from "@/hooks/use-debounce"
+import { useAuth } from "@/hooks/use-auth"
 import { toast } from "@/components/ui/toast"
 
 type NavbarProps = {
@@ -41,6 +58,53 @@ export default function Navbar({
 }: NavbarProps) {
     const router = useRouter()
     const { activeWorkspace, profile } = useWorkspaceSwitcher()
+    const { logout } = useAuth()
+
+    // ── Profile Dropdown & Logout State ───────────────────────────────────────
+    const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
+    const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false)
+    const [isLoggingOut, setIsLoggingOut] = useState(false)
+    const profileHoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+    const handleProfileMouseEnter = () => {
+        if (profileHoverTimeoutRef.current) {
+            clearTimeout(profileHoverTimeoutRef.current)
+            profileHoverTimeoutRef.current = null
+        }
+        setIsProfileMenuOpen(true)
+    }
+
+    const handleProfileMouseLeave = () => {
+        if (profileHoverTimeoutRef.current) {
+            clearTimeout(profileHoverTimeoutRef.current)
+        }
+        profileHoverTimeoutRef.current = setTimeout(() => {
+            setIsProfileMenuOpen(false)
+        }, 150)
+    }
+
+    useEffect(() => {
+        return () => {
+            if (profileHoverTimeoutRef.current) {
+                clearTimeout(profileHoverTimeoutRef.current)
+            }
+        }
+    }, [])
+
+    const handleConfirmLogout = async () => {
+        setIsLoggingOut(true)
+        try {
+            await logout()
+            toast.success("Logged out", "You have been logged out successfully.")
+            setIsLogoutDialogOpen(false)
+            router.push("/")
+            router.refresh()
+        } catch (error) {
+            toast.error("Logout failed", error instanceof Error ? error.message : "Failed to log out.")
+        } finally {
+            setIsLoggingOut(false)
+        }
+    }
 
     // ── Search State ──────────────────────────────────────────────────────────
     const [isSearchOpen, setIsSearchOpen] = useState(false)
@@ -331,14 +395,67 @@ export default function Navbar({
                             <Bell className="h-4 w-4 md:h-5 md:w-5" />
                         </Button>
 
-                        <button
-                            type="button"
-                            onClick={() => router.push("/profile")}
-                            aria-label="User profile"
-                            className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-transparent text-sm font-medium text-[#E2E8F0] transition-colors hover:bg-[#18181B] md:h-8 md:w-8"
+                        {/* Profile Dropdown Menu */}
+                        <div
+                            onMouseEnter={handleProfileMouseEnter}
+                            onMouseLeave={handleProfileMouseLeave}
+                            className="relative"
                         >
-                            <User2 className="h-4 w-4 md:h-5 md:w-5" />
-                        </button>
+                            <DropdownMenu open={isProfileMenuOpen} onOpenChange={setIsProfileMenuOpen}>
+                                <DropdownMenuTrigger
+                                    aria-label="User menu"
+                                    onClick={() => setIsProfileMenuOpen((prev) => !prev)}
+                                    className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent bg-transparent text-sm font-medium text-[#E2E8F0] transition-colors hover:border-[#27272A] hover:bg-[#18181B] focus:outline-none md:h-8 md:w-8"
+                                >
+                                    <User2 className="h-4 w-4 md:h-5 md:w-5" />
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent
+                                    align="end"
+                                    sideOffset={6}
+                                    onMouseEnter={handleProfileMouseEnter}
+                                    onMouseLeave={handleProfileMouseLeave}
+                                    className="w-48 min-w-[180px] rounded-lg border border-[#27272A] bg-[#0E0E11] p-1 text-[#E2E8F0] shadow-[0_12px_40px_rgba(0,0,0,0.85)]"
+                                >
+                                    {(profile?.fullname || profile?.username) && (
+                                        <div className="border-b border-[#27272A] px-2.5 py-1.5 mb-1">
+                                            <p className="truncate text-xs font-semibold text-[#E2E8F0]">
+                                                {profile.fullname || profile.username || userName}
+                                            </p>
+                                            {profile.email && (
+                                                <p className="truncate text-[11px] text-[#94A3B8]">
+                                                    {profile.email}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Option 1: Profile */}
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setIsProfileMenuOpen(false)
+                                            router.push("/profile")
+                                        }}
+                                        className="flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-xs font-medium text-[#E2E8F0] transition-colors hover:bg-[#18181B] focus:bg-[#18181B] focus:text-[#E2E8F0]"
+                                    >
+                                        <User2 className="h-4 w-4 text-[#94A3B8]" />
+                                        <span>Profile</span>
+                                    </DropdownMenuItem>
+
+                                    {/* Option 2: Logout */}
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setIsProfileMenuOpen(false)
+                                            setIsLogoutDialogOpen(true)
+                                        }}
+                                        className="flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/10 hover:text-white focus:bg-red-500/10 focus:text-white"
+                                    >
+                                        <LogOut className="h-4 w-4 text-red-400" />
+                                        <span>Logout</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -474,6 +591,34 @@ export default function Navbar({
                     </div>
                 </div>
             )}
+            {/* ── Logout Confirmation Dialog ─────────────────────────────────── */}
+            <AlertDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+                <AlertDialogContent className="max-w-sm rounded-xl border border-[#27272A] bg-[#0E0E11] p-5 text-[#E2E8F0] shadow-[0_20px_60px_rgba(0,0,0,0.9)]">
+                    <AlertDialogHeader className="space-y-2 text-left">
+                        <AlertDialogTitle className="text-base font-semibold tracking-tight text-[#E2E8F0]">
+                            Log out of IssueForge?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-xs leading-relaxed text-[#94A3B8]">
+                            Are you sure you want to log out? You will need to sign in again to access your account and workspaces.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="mt-5 flex flex-row items-center justify-end gap-2 border-t border-[#27272A] pt-3">
+                        <AlertDialogCancel
+                            disabled={isLoggingOut}
+                            className="h-8 rounded-sm border border-[#27272A] bg-[#18181B] px-3 text-xs font-medium text-[#E2E8F0] transition-colors hover:bg-[#27272A] hover:text-white cursor-pointer"
+                        >
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleConfirmLogout}
+                            disabled={isLoggingOut}
+                            className="h-8 rounded-sm bg-red-600 px-3.5 text-xs font-medium text-white transition-colors hover:bg-red-700 active:scale-95 disabled:opacity-60 cursor-pointer"
+                        >
+                            {isLoggingOut ? "Logging out..." : "Yes, log out"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     )
 }

@@ -107,4 +107,19 @@ export async function handleGoogleCallback(code: string, state: string): Promise
         console.error("Error completing Google sign-in: ", message);
         throw new Error(message || "An error occurred while completing Google sign-in");
     }
-}
+}
+
+export async function logout(refreshToken?: string): Promise<{ message: string }> {
+    try {
+        const response = await axiosClient.post<{ message: string }>(`/api/users/logout`, {
+            refresh_token: refreshToken || "",
+        });
+        return response.data;
+    } catch (error) {
+        const axiosError = error as AxiosError<ApiResponse & { error?: string }>;
+        const message = axiosError.response?.data?.error || axiosError.response?.data?.message || axiosError.message;
+        console.error("Error logging out: ", message);
+        throw new Error(message || "An error occurred while logging out");
+    }
+}
+

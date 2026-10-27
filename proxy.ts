@@ -35,7 +35,6 @@ function isAuthRoute(pathname: string): boolean {
 
 export async function proxy(req: NextRequest) {
     const pathname = req.nextUrl.pathname;
-    console.log("Proxy: Request received for:", pathname);
 
     if (pathname === "/sign-in") {
         return NextResponse.redirect(new URL("/login", req.url));
@@ -44,9 +43,11 @@ export async function proxy(req: NextRequest) {
         return NextResponse.redirect(new URL("/register", req.url));
     }
 
+    const isAuthPage = isAuthRoute(pathname);
+    const isPublic = isPublicRoute(pathname);
+
     let userId: string | null = null;
     const accessToken = req.cookies.get("accessToken")?.value || req.cookies.get("access_token")?.value;
-    const refreshToken = req.cookies.get("refreshToken")?.value || req.cookies.get("refresh_token")?.value;
 
     if (accessToken) {
         try {
@@ -54,43 +55,36 @@ export async function proxy(req: NextRequest) {
             if (payload?.userId) {
                 userId = String(payload.userId);
             }
-        } catch (error: unknown) {
-            const msg = error instanceof Error ? error.message : "unknown";
-            console.log("Proxy: Invalid access token:", msg);
-            userId = null;
-        }
-    }
-
-    if (!userId && refreshToken) {
-        try {
-            const refreshPayload = verifyToken(refreshToken);
-            if (refreshPayload?.userId) {
-                userId = String(refreshPayload.userId);
-            } else if (refreshToken.length > 20) {
-                userId = "authenticated";
-            }
         } catch {
             userId = null;
         }
     }
 
-    const isAuthPage = isAuthRoute(pathname);
-
-    if (userId && isAuthPage) {
-        console.log("Proxy: Redirecting authenticated user away from auth page to /profile");
-        return NextResponse.redirect(new URL("/profile", req.url));
+    // 1. Auth pages (/login, /register, etc.):
+    // Never block, trap, or silently auto-login/redirect users away from auth pages in proxy.
+    // Ensure any leftover cookies are purged when unauthenticated so the user starts with a clean slate.
+    if (isAuthPage) {
+        const response = NextResponse.next();
+        if (!userId && accessToken) {
+            response.cookies.delete("accessToken");
+            response.cookies.delete("access_token");
+        }
+        return response;
     }
 
-    // if (userId && pathname === "/") {
-    //     console.log("Proxy: Redirecting authenticated user from / to /profile");
-    //     return NextResponse.redirect(new URL("/profile", req.url));
-    // }
-
-    if (!userId && !isPublicRoute(pathname)) {
-        console.log("Proxy: Redirecting unauthenticated user to /login from:", pathname);
-        return NextResponse.redirect(new URL("/login", req.url));
+    // 2. Protected routes:
+    // Strictly require a valid, verified access token.
+    // If unauthenticated, redirect immediately to /login and delete all auth cookies.
+    if (!userId && !isPublic) {
+        const redirectRes = NextResponse.redirect(new URL("/login", req.url));
+        redirectRes.cookies.delete("accessToken");
+        redirectRes.cookies.delete("access_token");
+        redirectRes.cookies.delete("refreshToken");
+        redirectRes.cookies.delete("refresh_token");
+        return redirectRes;
     }
 
+    // 3. Public pages or verified requests:
     const response = NextResponse.next();
     if (userId) {
         response.headers.set("x-user-id", userId);

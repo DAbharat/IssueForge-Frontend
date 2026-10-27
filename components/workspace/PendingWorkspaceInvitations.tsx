@@ -49,6 +49,8 @@ export default function PendingWorkspaceInvitations({
 
       {isLoading ? (
         <p className="mt-5 text-xs text-[#71717A]">Loading invitations…</p>
+      ) : error ? (
+        <p className="mt-5 text-xs text-red-400">{error}</p>
       ) : invitations.length === 0 ? (
         <p className="mt-5 text-xs text-[#71717A]">You have no pending invitations.</p>
       ) : (
@@ -56,7 +58,7 @@ export default function PendingWorkspaceInvitations({
           {invitations.map((invitation) => {
             const isUpdating = updatingId !== null && String(updatingId) === String(invitation.id)
             const workspaceName = invitation.workspace_name ?? `Workspace #${invitation.workspace_id}`
-            const inviter = invitation.inviter_fullname ?? invitation.inviter_username
+            const inviter = invitation.inviter_fullname ?? invitation.inviter_username ?? invitation.invited_username
 
             return (
               <div key={invitation.id} className="flex flex-col gap-3 rounded-lg border border-[#27272A] bg-[#18181B] p-4 sm:flex-row sm:items-center sm:justify-between">

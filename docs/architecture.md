@@ -92,7 +92,7 @@ Example:
 
 ```text
 services/
-├── account.service.ts                  # User/account and auth calls (register, login, me, search, Google OAuth)
+├── account.service.ts                  # User/account and auth calls (register, login, logout, me, search, Google OAuth)
 ├── workspaces.service.ts               # Workspace related calls
 ├── projects.service.ts                 # Project related calls
 ├── issues.service.ts                   # Issue related calls
@@ -452,8 +452,8 @@ Backend API
 
 4. **Service Layer (`services/account.service.ts`)**:
    - Encapsulates authentication backend interactions:
-     - `getGoogleAuthUrl()`: Returns the full backend URL (`${API_BASE_URL}/api/auth/google`) for initiating the OAuth handshake.
-     - `handleGoogleCallback(code, state)`: Communicates with `GET /api/auth/google/callback` via `axiosClient` with `withCredentials: true` when handled asynchronously.
+     - `getGoogleOAuthUrl()`: Returns the full backend URL (`${API_BASE_URL}/api/auth/google`) for initiating the OAuth handshake.
+     - The backend handles the OAuth callback directly at `/api/auth/google/callback`, exchanges the authorization code, and redirects the browser to `/auth/callback?access_token=...&refresh_token=...` where the frontend stores the tokens.
 
 ### 3. Backend Integration & Data Model Semantics
 

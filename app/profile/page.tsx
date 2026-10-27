@@ -9,6 +9,7 @@ import WorkspaceCard from "@/components/workspaces/WorkspaceCard"
 import ProfileProjectCard from "@/components/profile/ProfileProjectCard"
 import ProfileIssueCard from "@/components/profile/ProfileIssueCard"
 import { useProfile } from "@/hooks/use-profile"
+import { Button } from "@/components/ui/button"
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -30,8 +31,16 @@ export default function ProfilePage() {
   if (error || !profile) {
     return (
       <div className="mx-auto max-w-5xl">
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-6 text-sm text-red-200">
-          {error || "Profile unavailable"}
+        <div className="flex flex-col items-start gap-4 rounded-lg border border-red-500/30 bg-red-500/10 p-6 text-sm text-red-200">
+          <p>{error || "Profile unavailable"}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/login")}
+            className="border-red-500/40 text-red-100 hover:bg-red-500/20"
+          >
+            Go to Login
+          </Button>
         </div>
       </div>
     )

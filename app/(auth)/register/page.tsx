@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation"
 
 import Register from "@/components/auth/register"
 import { register, getGoogleOAuthUrl } from "@/services/account.service"
+import { useAuth } from "@/hooks/use-auth"
 import { toast } from "@/components/ui/toast"
 
 export default function RegisterPage() {
   const router = useRouter()
+  const { clearAuthTokens } = useAuth()
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [username, setUsername] = useState("")
@@ -36,12 +38,14 @@ export default function RegisterPage() {
     setIsSubmitting(true)
 
     try {
+      clearAuthTokens()
       await register({
         username: username.trim(),
         fullname,
         email,
         password,
       })
+      clearAuthTokens()
       toast.success("Account created", "Your account has been created. Please sign in.")
       router.push("/login")
     } catch (error) {

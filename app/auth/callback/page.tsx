@@ -26,6 +26,21 @@ function CallbackContent() {
       return
     }
 
+    // 1. Direct tokens from backend redirect
+    const directAccessToken = searchParams.get("access_token") ?? searchParams.get("accessToken")
+    const directRefreshToken = searchParams.get("refresh_token") ?? searchParams.get("refreshToken")
+
+    if (directAccessToken) {
+      setAuthTokens({
+        accessToken: directAccessToken,
+        refreshToken: directRefreshToken,
+      })
+      toast.success("Welcome!", "Signed in with Google successfully.")
+      router.push("/profile")
+      return
+    }
+
+    // 2. Authorization code exchange
     const code = searchParams.get("code")
     const state = searchParams.get("state")
 

@@ -205,6 +205,43 @@ Error responses:
 - `500 Internal Server Error`:
   - `{"error": "internal server error"}`
 
+### 4c) POST /api/users/logout
+Auth required: Yes  
+Rate limit: 3 requests / minute (`authRateLimit`)
+
+Terminates the user's session and revokes the active refresh token from Redis.
+
+Headers:
+```http
+Authorization: Bearer <access_token>
+```
+
+Request body:
+```json
+{
+  "refresh_token": "eyJhbGciOi..."
+}
+```
+
+Behavior & Details:
+- The backend deletes the provided refresh token from the Redis token store.
+- If `refresh_token` is empty or not found in Redis, the backend completes gracefully without returning an error.
+- Enforces single JSON object payload with unknown fields disallowed (payload limit 1 MB).
+
+Response (200 OK):
+```json
+{
+  "message": "user logged out"
+}
+```
+
+Error responses:
+- `400 Bad Request`:
+  - `{"error": "invalid or oversized request body"}`
+  - `{"error": "request body must contain a single json object"}`
+- `401 Unauthorized`:
+  - `{"error": "unauthorized"}` (missing or invalid Bearer access token)
+
 ---
 
 ## User endpoints
@@ -973,6 +1010,127 @@ Query params:
 - `search` (string, optional)
 
 Response (200 OK): array of archived attachment objects (`id`, `issue_id`, `issue_title`, `project_id`, `project_name`, `uploaded_by`, `uploader_name`, `original_name`, `resource_type`, `mime_type`, `file_size`, `public_url`, `created_at`, `deleted_at`)
+
+---
+
+## Workspace Invitations
+
+### 70) POST /api/workspaces/{workspaceID}/invitations
+Auth required: Yes (Admin/Owner only)
+
+Request body:
+```json
+{
+  "user_id": 23
+}
+```
+
+Response (201 Created):
+```json
+{
+  "id": 5,
+  "workspace_id": 5,
+  "invited_user_id": 23,
+  "invitedd_by": 1,
+  "status": "PENDING",
+  "created_at": "2026-10-20T20:43:48.07822+05:30",
+  "responded_at": null
+}
+```
+
+### 71) GET /api/invitations/pending
+Auth required: Yes
+
+Returns pending invitations sent to the authenticated user.
+
+Response (200 OK):
+```json
+[
+  {
+    "id": 5,
+    "workspace_id": 5,
+    "workspace_name": "Bharat's Workspaces 2",
+    "invited_username": "bharat",
+    "inviter_fullname": "Bharat Don",
+    "created_at": "2026-10-20T20:43:48.07822+05:30"
+  }
+]
+```
+
+### 72) GET /api/invitations/{invitationID}
+Auth required: Yes
+
+Response (200 OK):
+```json
+{
+  "id": 5,
+  "workspace_id": 5,
+  "invited_user_id": 23,
+  "invitedd_by": 1,
+  "status": "PENDING",
+  "created_at": "2026-10-20T20:43:48.07822+05:30",
+  "responded_at": null
+}
+```
+
+### 73) GET /api/workspaces/{workspaceID}/invitations/pending
+Auth required: Yes (Admin/Owner only)
+
+Returns pending invitations sent by this workspace.
+
+Response (200 OK):
+```json
+[
+  {
+    "id": 5,
+    "workspace_id": 5,
+    "invited_user_id": 23,
+    "username": "bhardemo27_9f7c5",
+    "fullname": "bhardemo",
+    "created_at": "2026-10-20T20:43:48.07822+05:30"
+  }
+]
+```
+
+### 74) POST /api/invitations/{invitationID}/accept
+Auth required: Yes (Invited user only)
+
+Response (200 OK):
+```json
+{
+  "id": 5,
+  "workspace_id": 5,
+  "invited_user_id": 23,
+  "status": "ACCEPTED",
+  "responded_at": "2026-10-20T21:00:00Z"
+}
+```
+
+### 75) POST /api/invitations/{invitationID}/decline
+Auth required: Yes (Invited user only)
+
+Response (200 OK):
+```json
+{
+  "id": 5,
+  "workspace_id": 5,
+  "invited_user_id": 23,
+  "status": "DECLINED",
+  "responded_at": "2026-10-20T21:00:00Z"
+}
+```
+
+### 76) POST /api/invitations/{invitationID}/cancel
+Auth required: Yes (Admin/Owner only)
+
+Response (200 OK):
+```json
+{
+  "id": 5,
+  "status": "CANCELLED",
+  "responded_at": "2026-10-20T21:00:00Z"
+}
+```
 
 ---
 
