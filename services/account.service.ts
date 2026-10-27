@@ -94,6 +94,25 @@ export function getGoogleOAuthUrl(): string {
     return `${baseUrl}/api/auth/google`;
 }
 
+export type ExchangeResponse = {
+    access_token: string;
+    refresh_token: string;
+};
+
+export async function exchangeHandoff(code: string): Promise<ExchangeResponse> {
+    try {
+        const response = await axiosClient.post<ExchangeResponse>(`/api/auth/exchange`, {
+            code,
+        });
+        return response.data;
+    } catch (error) {
+        const axiosError = error as AxiosError<ApiResponse & { error?: string }>;
+        const message = axiosError.response?.data?.error || axiosError.response?.data?.message || axiosError.message;
+        console.error("Error exchanging handoff code: ", message);
+        throw new Error(message || "An error occurred while exchanging handoff code");
+    }
+}
+
 export async function handleGoogleCallback(code: string, state: string): Promise<GoogleLoginResponse> {
     try {
         const response = await axiosClient.get<GoogleLoginResponse>(`/api/auth/google/callback`, {

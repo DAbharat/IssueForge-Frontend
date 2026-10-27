@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState, Suspense } from "react"
+import { useEffect, useState, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
 import { useAuth } from "@/hooks/use-auth"
-import { handleGoogleCallback } from "@/services/account.service"
+import { exchangeHandoff, handleGoogleCallback } from "@/services/account.service"
 import { toast } from "@/components/ui/toast"
 
 function CallbackContent() {
@@ -13,6 +13,7 @@ function CallbackContent() {
   const searchParams = useSearchParams()
   const { setAuthTokens } = useAuth()
   const [errorStatus, setErrorStatus] = useState<string | null>(null)
+  const executedCodeRef = useRef<string | null>(null)
 
   useEffect(() => {
     const errorParam = searchParams.get("error")
@@ -35,34 +36,53 @@ function CallbackContent() {
         accessToken: directAccessToken,
         refreshToken: directRefreshToken,
       })
-      toast.success("Welcome!", "Signed in with Google successfully.")
+      toast.success("Welcome back!", "Signed in with Google successfully.")
       router.push("/profile")
       return
     }
 
-    // 2. Authorization code exchange
+    // 2. Authorization code exchange or handoff code exchange
     const code = searchParams.get("code")
     const state = searchParams.get("state")
 
-    if (!code || !state) {
-      const msg = "Invalid or missing OAuth authorization parameters."
+    if (!code) {
+      const msg = "Invalid or missing authentication code."
       setErrorStatus(msg)
       toast.error("Sign in failed", msg)
       router.push("/login")
       return
     }
 
-    handleGoogleCallback(code, state)
-      .then((result) => {
-        const accessToken = result.accessToken ?? result.access_token
-        const refreshToken = result.refreshToken ?? result.refresh_token
+    // Prevent double execution in React StrictMode or concurrent re-renders
+    if (executedCodeRef.current === code) {
+      return
+    }
+    executedCodeRef.current = code
+
+    // If state is present, fallback to direct Google code/state callback.
+    // If only code is present (standard navigation handoff flow), exchange the handoff code.
+    const exchangePromise = state
+      ? handleGoogleCallback(code, state).then((res) => ({
+          accessToken: res.accessToken ?? res.access_token,
+          refreshToken: res.refreshToken ?? res.refresh_token,
+        }))
+      : exchangeHandoff(code).then((res) => ({
+          accessToken: res.access_token,
+          refreshToken: res.refresh_token,
+        }))
+
+    exchangePromise
+      .then(({ accessToken, refreshToken }) => {
+        if (!accessToken) {
+          throw new Error("No access token received from authentication server")
+        }
 
         setAuthTokens({
           accessToken,
-          refreshToken,
+          refreshToken: refreshToken ?? null,
         })
 
-        toast.success("Welcome!", "Signed in with Google successfully.")
+        toast.success("Welcome back!", "Signed in with Google successfully.")
         router.push("/profile")
       })
       .catch((err) => {

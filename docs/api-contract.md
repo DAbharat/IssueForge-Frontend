@@ -142,7 +142,7 @@ Behavior & Details:
 Auth required: No  
 Rate limit: None
 
-OAuth 2.0 callback endpoint invoked by Google after the user completes consent. Validates the CSRF state token against the `google_oauth_state` cookie, exchanges the authorization code with Google for tokens, verifies the OpenID Connect ID token, provisions or links the user account in PostgreSQL, generates a JWT access token and Redis refresh token, and returns the session payload.
+OAuth 2.0 callback endpoint invoked by Google after the user completes consent. Validates the CSRF state token against the `google_oauth_state` cookie, exchanges the authorization code with Google for tokens, verifies the OpenID Connect ID token, provisions or links the user account in PostgreSQL, generates a JWT access token and Redis refresh token, and returns the session payload or executes a secure handoff redirect.
 
 Query params:
 - `code` (string, required): The authorization code issued by Google.
@@ -151,7 +151,7 @@ Query params:
 
 Cookies:
 - `google_oauth_state` (required): Cookie set during the initiation step. Deleted upon callback processing (`Max-Age: -1`).  
-  *Note: The cookie path is `/api/auth/google`, so the browser automatically supplies it when visiting `/api/auth/google/callback`.*
+  *Note: The cookie path is `/`, so the browser automatically supplies it when visiting `/api/auth/google/callback`.*
 
 User Resolution & Account Linking:
 1. **Existing Google User**: If a user record with a matching `google_sub` exists in the database, the backend authenticates the user directly.
@@ -161,12 +161,20 @@ User Resolution & Account Linking:
    - `fullname` is extracted from Google claims `name` (or `given_name + family_name`, fallback to generated username).
    - Password hash is set to placeholder `!oidc-no-password!` (direct password login is disabled).
    - The user record is created in PostgreSQL with `google_sub`.
-4. **Session Generation**:
+4. **Session Generation & Secure Handoff**:
    - Generates signed JWT access token (`JWTSecret`).
    - Generates crypto-random refresh token stored in Redis with configured TTL (`REFRESH_TOKEN_TTL`).
    - Retrieves user's workspace memberships.
+   - **Browser Navigation Requests (`Sec-Fetch-Mode: navigate`)**:
+     Instead of returning tokens directly in JSON or in URL parameters (which would leak into browser history and logs), the backend creates a cryptographically secure 32-byte base64url one-time **handoff code** stored in Redis with a 60-second TTL.
+     The backend then returns a `302 Found` redirect to:
+     `${FRONTEND_URL}/auth/callback?code={handoffCode}`
+   - **Non-navigation / API clients**: Returns direct `200 OK` JSON with `LoginUserResponse`.
 
-Response (200 OK):
+Response (302 Found for browser navigation):
+- `Location`: `${FRONTEND_URL}/auth/callback?code=<handoffCode>`
+
+Response (200 OK for direct API clients):
 
 ```json
 {
@@ -205,7 +213,45 @@ Error responses:
 - `500 Internal Server Error`:
   - `{"error": "internal server error"}`
 
-### 4c) POST /api/users/logout
+### 4c) POST /api/auth/exchange
+Auth required: No  
+Rate limit: None
+
+Exchanges a temporary single-use Google OIDC handoff code stored in Redis for active JWT access and refresh tokens.
+
+Request body:
+
+```json
+{
+  "code": "4e73f8a09b...32_byte_base64url_string"
+}
+```
+
+Behavior & Details:
+- The backend looks up the key `handoff:<code>` in Redis using `HGetAll`.
+- The code entry is **atomically consumed and deleted from Redis before returning** (`Consume`), preventing reuse and replay attacks.
+- Handoff codes have a strict 60-second TTL.
+- Enforces payload limit of 4096 bytes with unknown fields disallowed.
+- Eliminates exposing tokens in URL parameters, browser history, or server access logs.
+
+Response (200 OK):
+
+```json
+{
+  "access_token": "eyJhbGciOi...",
+  "refresh_token": "eyJhbGciOi..."
+}
+```
+
+Error responses:
+- `400 Bad Request`:
+  - `{"error": "invalid or oversized request body"}`
+  - `{"error": "request body must only contain a single json object"}`
+  - `{"error": "invalid handoff code"}` (code empty, not found, expired, or already consumed)
+- `500 Internal Server Error`:
+  - `{"error": "internal server error"}`
+
+### 4d) POST /api/users/logout
 Auth required: Yes  
 Rate limit: 3 requests / minute (`authRateLimit`)
 

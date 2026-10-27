@@ -378,38 +378,53 @@ IssueForge supports dual-mode authentication:
 1. **Password Authentication**: Email and password credentials (`POST /api/register`, `POST /api/login`).
 2. **Google OAuth 2.0 / OpenID Connect**: Federated sign-in and automated account linking using Google Identity Services (`GET /api/auth/google`, `GET /api/auth/google/callback`).
 
-### 1. OAuth 2.0 / OIDC Flow Architecture
+### 1. OAuth 2.0 / OIDC Handoff Exchange Architecture
 
-The backend handles the OAuth 2.0 authorization code exchange and OpenID Connect ID token verification securely on the server.
+IssueForge uses a secure **Redis Handoff Exchange** pattern for Google OIDC. Rather than passing sensitive access and refresh tokens directly in URL query parameters during browser redirects (which would leak into browser history, access logs, and referer headers), the backend issues a short-lived, single-use handoff code stored in Redis and exchanges it via a direct POST request.
 
 ```text
-User                      Browser                    Backend API (Go)              Google Identity
- │                           │                              │                             │
- │── Click "Google Sign In"─>│                              │                             │
- │                           │── GET /api/auth/google ─────>│                             │
- │                           │                              │ Generates 32-byte CSRF state│
- │                           │                              │ Sets google_oauth_state     │
- │                           │                              │ (HttpOnly, Path=/api/auth/..)
- │                           │<── 302 Redirect ─────────────│                             │
- │                           │                              │                             │
- │                           │── Follow 302 redirect ────────────────────────────────────>│
- │                           │   (to accounts.google.com)   │                             │
- │── Authenticate & Consent ─────────────────────────────────────────────────────────────>│
- │                           │<── 302 Redirect with code & state ─────────────────────────│
- │                           │                                                            │
- │                           │── GET /api/auth/google/callback?code=...&state=... ───────>│
- │                           │   (Browser attaches google_oauth_state cookie)             │
- │                           │                              │                             │
- │                           │                              │── POST /token (exchange) ──>│
- │                           │                              │<── Returns tokens & IDToken─│
- │                           │                              │                             │
- │                           │                              │ Verifies ID Token (OIDC)    │
- │                           │                              │ Resolves User in PostgreSQL │
- │                           │                              │ Generates JWT Access Token  │
- │                           │                              │ Stores Refresh Token (Redis)│
- │                           │<── 200 OK (LoginUserResponse)│                             │
- │                           │                              │                             │
- │── Redirect to App / Auth ─│                              │                             │
+User                      Browser                         Backend API (Go)              Google Identity
+ │                           │                                   │                             │
+ │── Click "Google Sign In"─>│                                   │                             │
+ │                           │── GET /api/auth/google ──────────>│                             │
+ │                           │                                   │ Generates 32-byte CSRF state│
+ │                           │                                   │ Sets google_oauth_state     │
+ │                           │                                   │ (HttpOnly, SameSite=Lax)    │
+ │                           │<── 302 Redirect ──────────────────│                             │
+ │                           │                                   │                             │
+ │                           │── Follow 302 redirect ─────────────────────────────────────────>│
+ │                           │   (to accounts.google.com)        │                             │
+ │── Authenticate & Consent ──────────────────────────────────────────────────────────────────>│
+ │                           │<── 302 Redirect with code & state ──────────────────────────────│
+ │                           │                                   │                             │
+ │                           │── GET /api/auth/google/callback ─>│                             │
+ │                           │   (Browser attaches state cookie) │                             │
+ │                           │                                   │── POST /token (exchange) ──>│
+ │                           │                                   │<── Returns tokens & IDToken─│
+ │                           │                                   │                             │
+ │                           │                                   │ Verifies ID Token (OIDC)    │
+ │                           │                                   │ Resolves User in PostgreSQL │
+ │                           │                                   │ Generates JWT Access Token  │
+ │                           │                                   │ Stores Refresh Token (Redis)│
+ │                           │                                   │                             │
+ │                           │                                   │ CreateHandoff():            │
+ │                           │                                   │ - Generates 32-byte code    │
+ │                           │                                   │ - Saves tokens to Redis     │
+ │                           │                                   │   (TTL: 60s, handoff:<code>)│
+ │                           │<── 302 Found ─────────────────────│                             │
+ │                           │    Location:                      │                             │
+ │                           │    /auth/callback?code=HANDOFF    │                             │
+ │                           │                                   │                             │
+ │                           │── Next.js /auth/callback loads ───│                             │
+ │                           │                                   │                             │
+ │                           │── POST /api/auth/exchange ───────>│                             │
+ │                           │   Body: { "code": HANDOFF }       │ Atomically consumes &       │
+ │                           │                                   │ deletes handoff from Redis  │
+ │                           │<── 200 OK ────────────────────────│                             │
+ │                           │    { access_token, refresh_token }│                             │
+ │                           │                                   │                             │
+ │── Session Stored ────────>│ Passes to useAuth.setAuthTokens() │                             │
+ │── Redirect to App ───────>│ Navigates to /profile             │                             │
 ```
 
 ### 2. Layered Responsibilities (Code Making Flow)
@@ -420,12 +435,12 @@ To maintain clean separation of concerns, the OAuth implementation strictly adhe
 Presentational Component (Dumb)
        ↓ (Emits onClick event)
 Page / Container Layer
-       ↓ (Coordinates flow / redirect)
+       ↓ (Coordinates flow / handles handoff redirect)
 Hook Layer (useAuth)
        ↓ (Manages tokens & session state)
 Service Layer (account.service.ts)
        ↓
-Backend API
+Backend API (Go)
 ```
 
 #### Layer Breakdown:
@@ -440,10 +455,13 @@ Backend API
      </Button>
      ```
 
-2. **Page / Container Layer (`app/(auth)/login/page.tsx`, `app/(auth)/register/page.tsx`, or OAuth callback handler)**:
-   - Coordinates user interaction with the application lifecycle.
-   - When the user clicks the Google button, initiates the flow by redirecting the browser to the backend OAuth entrypoint (`${API_BASE_URL}/api/auth/google`).
-   - If processing the callback in frontend (or when the backend returns the `LoginUserResponse`), receives the tokens, passes them to `useAuth.setAuthTokens()`, displays success/error toasts, and navigates the user to their workspace or `/profile`.
+2. **Page / Container Layer (`app/auth/callback/page.tsx`, `app/(auth)/login/page.tsx`)**:
+   - Coordinates the handoff exchange lifecycle.
+   - Reads the one-time `code` query parameter delivered by the backend redirect.
+   - Uses an execution ref guard (`useRef`) to strictly guarantee single execution (preventing React 18 Strict Mode or double re-renders from attempting to re-consume an already consumed Redis handoff code).
+   - Calls `exchangeHandoff(code)` from `services/account.service.ts`.
+   - On success, updates authentication state via `setAuthTokens()`, triggers a toast notification, and navigates the user to `/profile`.
+   - On error, displays a styled error message and safely navigates back to `/login`.
 
 3. **Hook / State Layer (`hooks/use-auth.ts`)**:
    - Stores session state (`accessToken`, `refreshToken`, `isAuthenticated`).
@@ -452,8 +470,9 @@ Backend API
 
 4. **Service Layer (`services/account.service.ts`)**:
    - Encapsulates authentication backend interactions:
-     - `getGoogleOAuthUrl()`: Returns the full backend URL (`${API_BASE_URL}/api/auth/google`) for initiating the OAuth handshake.
-     - The backend handles the OAuth callback directly at `/api/auth/google/callback`, exchanges the authorization code, and redirects the browser to `/auth/callback?access_token=...&refresh_token=...` where the frontend stores the tokens.
+     - `getGoogleOAuthUrl()`: Returns the full backend entrypoint URL (`${API_BASE_URL}/api/auth/google`) for initiating the OAuth handshake.
+     - `exchangeHandoff(code)`: Sends `POST /api/auth/exchange` with `{ code }` to retrieve `{ access_token, refresh_token }`.
+     - `handleGoogleCallback(code, state)`: Retained as a fallback for non-handoff or direct authorization code workflows.
 
 ### 3. Backend Integration & Data Model Semantics
 

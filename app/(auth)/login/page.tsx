@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 import Login from "@/components/auth/login"
 import { useAuth } from "@/hooks/use-auth"
-import { login, getGoogleOAuthUrl, handleGoogleCallback } from "@/services/account.service"
+import { login, getGoogleOAuthUrl, handleGoogleCallback, exchangeHandoff } from "@/services/account.service"
 import { toast } from "@/components/ui/toast"
 
 function LoginContent() {
@@ -17,6 +17,7 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const executedCodeRef = useRef<string | null>(null)
 
   useEffect(() => {
     const errorParam = searchParams.get("error")
@@ -32,16 +33,33 @@ function LoginContent() {
     const code = searchParams.get("code")
     const state = searchParams.get("state")
 
-    if (code && state) {
+    if (code) {
+      if (executedCodeRef.current === code) {
+        return
+      }
+      executedCodeRef.current = code
+
       setIsSubmitting(true)
-      handleGoogleCallback(code, state)
-        .then((result) => {
-          const accessToken = result.accessToken ?? result.access_token
-          const refreshToken = result.refreshToken ?? result.refresh_token
+
+      const exchangePromise = state
+        ? handleGoogleCallback(code, state).then((res) => ({
+            accessToken: res.accessToken ?? res.access_token,
+            refreshToken: res.refreshToken ?? res.refresh_token,
+          }))
+        : exchangeHandoff(code).then((res) => ({
+            accessToken: res.access_token,
+            refreshToken: res.refresh_token,
+          }))
+
+      exchangePromise
+        .then(({ accessToken, refreshToken }) => {
+          if (!accessToken) {
+            throw new Error("No access token received from authentication server")
+          }
 
           setAuthTokens({
             accessToken,
-            refreshToken,
+            refreshToken: refreshToken ?? null,
           })
 
           toast.success("Welcome back!", "Signed in with Google successfully.")

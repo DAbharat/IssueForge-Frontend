@@ -999,6 +999,27 @@ Normal application pages should remain more information-dense and should follow 
 
 ---
 
+## 26.1 OAuth Handoff and Callback Screen (`/auth/callback`)
+
+The authentication callback screen acts as the handoff exchange canvas while exchanging the one-time Redis handoff code for session tokens.
+
+Visual & interaction rules:
+
+* **Canvas:** Pitch black background (`#000000` / `bg-black`), centered layout.
+* **Loading Spinner:** `Loader2` from `lucide-react` with `text-[#94A3B8]` and `animate-spin` (never use purple, indigo, or oversized spinners).
+* **Typography Hierarchy:**
+  * Title: `#E2E8F0` (primary text), `text-xl font-medium tracking-tight`
+  * Description: `#94A3B8` (secondary text), `text-sm`
+  * Status/Redirect subtext: `#64748B` (muted text), `text-xs`
+* **Error Presentation:**
+  * Header: `text-red-400`, `text-xl font-medium tracking-tight`
+  * Error description: `text-[#94A3B8]`, `text-sm`
+  * Auto-redirect to `/login` with an accompanying error toast via `toast.error()`.
+* **Execution Idempotency:** The handoff code is strictly single-use in Redis. The callback component must guard execution via a React `useRef` to guarantee that React 18 Strict Mode or double-mounting does not dispatch duplicate exchange requests.
+* **Strict Avoidance:** No gradients, no purple or indigo accents, no heavy shadows.
+
+---
+
 # 27. Hero Images
 
 Large hero imagery may be used on authentication or marketing-oriented pages.

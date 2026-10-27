@@ -11,6 +11,7 @@ const publicRoutes = [
     "/api/register",
     "/api/auth/refresh",
     "/api/auth/google",
+    "/api/auth/exchange",
 ];
 
 const authRoutes = [

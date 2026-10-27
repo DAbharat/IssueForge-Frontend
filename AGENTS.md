@@ -650,3 +650,15 @@ API → Service → Hook → Page → Component
 Keep these responsibilities separate.
 
 Do not solve a problem in a lower-level component when it belongs to a higher-level layer.
+
+---
+
+## 17. Authentication & Google OIDC Handoff Flow
+
+When working on authentication, OAuth, or session management:
+
+1. **Google OIDC Initiation**: Always initiate via `getGoogleOAuthUrl()` from `account.service.ts` (`GET /api/auth/google`), keeping button components dumb.
+2. **Handoff Exchange**: The backend completes Google token verification and redirects the browser to `/auth/callback?code=<handoffCode>`. The frontend must exchange this one-time code via `exchangeHandoff(code)` (`POST /api/auth/exchange`).
+3. **Single-Execution Guard**: Handoff codes in Redis are single-use (`DEL` on consumption). Always guard the exchange effect against double-invocation (e.g. via `useRef`) to avoid false-positive failure states during React Strict Mode or component re-renders.
+4. **Token Storage**: Store access & refresh tokens via `useAuth().setAuthTokens()`. Do not manually parse, tamper with, or expose raw tokens in URL parameters.
+

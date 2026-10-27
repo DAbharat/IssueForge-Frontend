@@ -109,7 +109,8 @@ axiosClient.interceptors.response.use(
       originalRequest?.url?.includes("/api/login") ||
       originalRequest?.url?.includes("/api/register") ||
       originalRequest?.url?.includes("/api/auth/refresh") ||
-      originalRequest?.url?.includes("/api/auth/google")
+      originalRequest?.url?.includes("/api/auth/google") ||
+      originalRequest?.url?.includes("/api/auth/exchange")
 
     if (error.response?.status !== 401 || !originalRequest || originalRequest._retry || isAuthEndpoint) {
       return Promise.reject(error)
