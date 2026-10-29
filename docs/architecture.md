@@ -103,8 +103,8 @@ services/
 ├── activities.service.ts               # Activity related calls
 ├── attachments.service.ts              # Issue & comment attachment calls
 ├── invitations.service.ts              # Workspace invitation calls
-└── archive.service.ts                  # Archive & soft-delete restore calls
-
+├── archive.service.ts                  # Archive & soft-delete restore calls
+└── analytics.service.ts                # Workspace & Project activity analytics, charts, velocity
 ```
 
 Do not make API requests directly from components.

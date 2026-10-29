@@ -207,9 +207,10 @@ export function AppSidebar({
   const isProjectsSectionActive = pathname.startsWith("/projects") || isProjectsTabActive
 
   const isInvitesTabActive = pathname === "/workspace" && currentTab === "Invitations"
+  const isAnalyticsTabActive = pathname === "/workspace" && currentTab === "Analytics"
   const isWorkspacesSectionActive =
     pathname === "/workspace" &&
-    (!currentTab || currentTab === "General" || currentTab === "Members" || currentTab === "Danger Zone" || isInvitesTabActive)
+    (!currentTab || currentTab === "General" || currentTab === "Members" || currentTab === "Danger Zone" || isInvitesTabActive || isAnalyticsTabActive)
 
   const isWorkspaceContext =
     pathname.startsWith("/workspace") ||
@@ -318,6 +319,28 @@ export function AppSidebar({
             >
               <span className="truncate">Invites</span>
               {isInvitesTabActive && (
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#DDE1E5]" />
+              )}
+            </button>
+          </TreeNode>
+
+          <TreeNode>
+            <button
+              type="button"
+              onClick={() => {
+                const targetWsId = activeWorkspaceId ?? (workspaces.length > 0 ? workspaces[0]?.id : undefined)
+                const targetUrl = targetWsId
+                  ? `/workspace?workspaceId=${targetWsId}&tab=Analytics`
+                  : `/workspace?tab=Analytics`
+                handleNavigate(targetUrl)
+              }}
+              className={[
+                SUB_ROW,
+                isAnalyticsTabActive ? "bg-[#27272A] font-medium text-[#E2E8F0]" : "",
+              ].join(" ")}
+            >
+              <span className="truncate">Analytics</span>
+              {isAnalyticsTabActive && (
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#DDE1E5]" />
               )}
             </button>

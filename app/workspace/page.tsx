@@ -26,6 +26,7 @@ import WorkspaceTabs, { WORKSPACE_TABS, type WorkspaceTabKey } from "@/component
 import WorkspaceDetails from "@/components/workspace/WorkspaceDetails"
 import WorkspaceInvitations from "@/components/workspace/WorkspaceInvitations"
 import PendingWorkspaceInvitations from "@/components/workspace/PendingWorkspaceInvitations"
+import { WorkspaceAnalyticsDashboard } from "@/components/analytics/WorkspaceAnalyticsDashboard"
 import { useProfile } from "@/hooks/use-profile"
 import { useWorkspaceSwitcher } from "@/hooks/use-workspace-switcher"
 import { useWorkspaceInvitations } from "@/hooks/use-workspace-invitations"
@@ -556,6 +557,13 @@ function WorkspaceContent() {
             error={receivedInvitationError}
             onAccept={acceptReceivedInvitation}
             onDecline={declineReceivedInvitation}
+          />
+        )}
+
+        {activeTab === "Analytics" && isAdmin && workspaceId && (
+          <WorkspaceAnalyticsDashboard
+            workspaceId={workspaceId}
+            workspaceName={workspaceName}
           />
         )}
 

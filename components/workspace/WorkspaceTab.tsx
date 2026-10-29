@@ -5,6 +5,7 @@ export const WORKSPACE_TABS = [
   "Members",
   "Projects",
   "Invitations",
+  "Analytics",
   "Danger Zone",
 ] as const
 
@@ -22,7 +23,7 @@ export default function WorkspaceTabs({
   isAdmin = false,
 }: WorkspaceTabsProps) {
   const visibleTabs = WORKSPACE_TABS.filter((tab) => {
-    if (tab === "Danger Zone") {
+    if (tab === "Danger Zone" || tab === "Analytics") {
       return Boolean(isAdmin)
     }
     return true

@@ -1243,6 +1243,117 @@ Response (200 OK):
 
 ---
 
+## Analytics
+
+### 77) GET /api/workspaces/{workspaceID}/analytics
+Auth required: Yes (Workspace Admin only)
+
+Query parameters (optional):
+- `from`: string (`YYYY-MM-DD` or RFC3339 timestamp, default: 30 days ago)
+- `to`: string (`YYYY-MM-DD` or RFC3339 timestamp, default: now)
+- `limit`: integer (top active members limit, default: 10)
+
+Response (200 OK):
+```json
+{
+  "daily_activities": [
+    {
+      "date": "2026-10-01",
+      "total_activities": 12
+    },
+    {
+      "date": "2026-10-02",
+      "total_activities": 8
+    }
+  ],
+  "issue_velocity": [
+    {
+      "date": "2026-10-01",
+      "issues_created": 4,
+      "issues_completed": 2
+    },
+    {
+      "date": "2026-10-02",
+      "issues_created": 3,
+      "issues_completed": 5
+    }
+  ],
+  "activity_breakdown": [
+    {
+      "activity_type": "ISSUE_CREATED",
+      "count": 45
+    },
+    {
+      "activity_type": "ISSUE_STATUS_UPDATED",
+      "count": 38
+    },
+    {
+      "activity_type": "COMMENT_CREATED",
+      "count": 29
+    }
+  ],
+  "member_leaderboard": [
+    {
+      "user_id": 10,
+      "fullname": "Alex Developer",
+      "username": "alexdev",
+      "email": "alex@example.com",
+      "issue_actions_count": 52,
+      "completed_issues_count": 14
+    }
+  ]
+}
+```
+
+### 78) GET /api/projects/{projectID}/analytics
+Auth required: Yes (Project Lead or Workspace Admin only)
+
+Query parameters (optional):
+- `from`: string (`YYYY-MM-DD` or RFC3339 timestamp, default: 30 days ago)
+- `to`: string (`YYYY-MM-DD` or RFC3339 timestamp, default: now)
+- `limit`: integer (project members activity stats limit, default: 10)
+
+Response (200 OK):
+```json
+{
+  "daily_activities": [
+    {
+      "date": "2026-10-01",
+      "total_activities": 7
+    }
+  ],
+  "issue_velocity": [
+    {
+      "date": "2026-10-01",
+      "issues_created": 2,
+      "issues_completed": 1
+    }
+  ],
+  "activity_breakdown": [
+    {
+      "activity_type": "ISSUE_CREATED",
+      "count": 20
+    },
+    {
+      "activity_type": "ISSUE_STATUS_UPDATED",
+      "count": 15
+    }
+  ],
+  "member_leaderboard": [
+    {
+      "user_id": 10,
+      "fullname": "Alex Developer",
+      "username": "alexdev",
+      "email": "alex@example.com",
+      "issue_actions_count": 35,
+      "completed_issues_count": 10
+    }
+  ]
+}
+```
+
+---
+
 ## Notes
 
 

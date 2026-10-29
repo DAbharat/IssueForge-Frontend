@@ -12,6 +12,7 @@ import ProjectMembers, {
 import ProjectOverview from "@/components/projects/ProjectOverview"
 import ProjectActivity from "@/components/projects/ProjectActivity"
 import ProjectSettings from "@/components/projects/ProjectSettings"
+import { ProjectAnalyticsDashboard } from "@/components/analytics/ProjectAnalyticsDashboard"
 import CreateIssueCard, {
   type CreateIssueMember,
   type CreateIssuePayload,
@@ -267,12 +268,21 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
     }
   }, [projectID])
 
-  // ── Derived: is the current viewer the project lead ───────────────────────
+  // ── Derived: is the current viewer the project lead or workspace admin ───
   const currentUserId = profile?.id
   const isLead =
     currentUserId !== undefined &&
     project?.lead_id !== undefined &&
     String(currentUserId) === String(project.lead_id)
+
+  const isWorkspaceAdmin = Boolean(
+    profile?.workspaces?.some(
+      (w) =>
+        String(w.id) === String(project?.workspace_id) &&
+        (w.role?.toLowerCase() === "admin" || w.role?.toLowerCase() === "owner")
+    )
+  )
+  const canViewAnalytics = isLead || isWorkspaceAdmin
 
   // ── Derived: members shaped for CreateIssueCard ───────────────────────────
   const cardMembers: CreateIssueMember[] = members.map((m) => ({
@@ -493,7 +503,11 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
 
       {/* Tabs */}
       <div className="border-b border-[#27272A] pt-6">
-        <ProjectTabs activeTab={activeTab} onTabChange={setActiveTab} />
+        <ProjectTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          canViewAnalytics={canViewAnalytics}
+        />
       </div>
 
       {/* Tab Content */}
@@ -547,6 +561,13 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
             error={activitiesError}
             onRetry={reloadActivities}
             onViewIssues={() => setActiveTab("Issues")}
+          />
+        )}
+
+        {activeTab === "Analytics" && projectID && (
+          <ProjectAnalyticsDashboard
+            projectId={projectID}
+            projectName={project.name}
           />
         )}
 
