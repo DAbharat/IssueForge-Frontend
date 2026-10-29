@@ -26,3 +26,31 @@ export async function listIssueActivities(issueId: string | number) {
         throw new Error(getErrorMessage(error, "An error occurred while fetching issue activities."));
     }
 }
+
+export type ProjectActivity = {
+    id: string | number;
+    project_id: string | number;
+    actor_id: string | number;
+    actor_name?: string;
+    actor_username?: string;
+    target_user_id?: string | number | null;
+    target_user_name?: string | null;
+    target_user_username?: string | null;
+    activity_type: string;
+    field_name?: string | null;
+    old_value?: string | null;
+    new_value?: string | null;
+    created_at?: string;
+};
+
+export async function listProjectActivities(projectId: string | number, limit = 20, offset = 0) {
+    try {
+        const response = await axiosClient.get<ProjectActivity[]>(`/api/projects/${projectId}/activities`, {
+            params: { limit, offset },
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "An error occurred while fetching project activities."));
+    }
+}
+

@@ -141,4 +141,26 @@ export async function logout(refreshToken?: string): Promise<{ message: string }
         throw new Error(message || "An error occurred while logging out");
     }
 }
+
+export type RefreshTokenResponse = {
+    accessToken?: string;
+    access_token?: string;
+    refreshToken?: string;
+    refresh_token?: string;
+};
+
+export async function refreshAccessToken(refreshToken: string): Promise<RefreshTokenResponse> {
+    try {
+        const response = await axiosClient.post<RefreshTokenResponse>(`/api/auth/refresh`, {
+            refresh_token: refreshToken,
+        });
+        return response.data;
+    } catch (error) {
+        const axiosError = error as AxiosError<ApiResponse & { error?: string }>;
+        const message = axiosError.response?.data?.error || axiosError.response?.data?.message || axiosError.message;
+        console.error("Error refreshing access token: ", message);
+        throw new Error(message || "An error occurred while refreshing access token");
+    }
+}
+
 

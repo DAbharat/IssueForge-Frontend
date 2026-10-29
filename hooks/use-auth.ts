@@ -123,7 +123,10 @@ export function useAuth() {
     }
   }, [tokens.refreshToken, clearAuthTokens])
 
-  const isAuthenticated = useMemo(() => Boolean(tokens.accessToken), [tokens.accessToken])
+  const isAuthenticated = useMemo(
+    () => Boolean(tokens.accessToken || tokens.refreshToken),
+    [tokens.accessToken, tokens.refreshToken],
+  )
 
   return {
     tokens,

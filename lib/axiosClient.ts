@@ -1,7 +1,12 @@
 import axios from "axios"
+import { isTokenExpiringSoon } from "@/lib/auth"
+
+const API_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+).replace(/\/+$/, "")
 
 const axiosClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: API_BASE_URL,
   withCredentials: true,
   timeout: 10000,
   headers: {
@@ -9,13 +14,18 @@ const axiosClient = axios.create({
   },
 })
 
-let isRefreshing = false
-let refreshQueue: Array<() => void> = []
+let refreshPromise: Promise<string> | null = null
 
 function setCookie(name: string, value: string, days: number = 7) {
   if (typeof document === "undefined") return
   const maxAge = days * 24 * 60 * 60
   document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax`
+}
+
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
+  return match ? decodeURIComponent(match[1]) : null
 }
 
 function deleteCookie(name: string) {
@@ -47,13 +57,16 @@ function clearAuthTokens() {
   deleteCookie("refresh_token")
 }
 
-async function refreshAccessToken() {
+async function refreshAccessToken(): Promise<string> {
   if (typeof window === "undefined") {
     throw new Error("Cannot refresh token outside the browser")
   }
 
   const refreshToken =
-    window.localStorage.getItem("refreshToken") ?? window.localStorage.getItem("refresh_token")
+    window.localStorage.getItem("refreshToken") ??
+    window.localStorage.getItem("refresh_token") ??
+    getCookie("refreshToken") ??
+    getCookie("refresh_token")
 
   if (!refreshToken) {
     clearAuthTokens()
@@ -61,7 +74,7 @@ async function refreshAccessToken() {
   }
 
   const response = await axios.post(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/auth/refresh`,
+    `${API_BASE_URL}/api/auth/refresh`,
     { refresh_token: refreshToken },
     {
       headers: {
@@ -82,19 +95,66 @@ async function refreshAccessToken() {
   setCookie("accessToken", nextAccessToken, 7)
   setCookie("access_token", nextAccessToken, 7)
 
+  const nextRefreshToken = response.data.refreshToken ?? response.data.refresh_token
+  if (nextRefreshToken) {
+    window.localStorage.setItem("refreshToken", nextRefreshToken)
+    window.localStorage.setItem("refresh_token", nextRefreshToken)
+    setCookie("refreshToken", nextRefreshToken, 30)
+    setCookie("refresh_token", nextRefreshToken, 30)
+  }
+
   return nextAccessToken
 }
 
-axiosClient.interceptors.request.use((config) => {
+function getRefreshedToken(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = refreshAccessToken().finally(() => {
+      refreshPromise = null
+    })
+  }
+  return refreshPromise
+}
+
+axiosClient.interceptors.request.use(async (config) => {
   if (typeof window === "undefined") {
     return config
   }
 
-  const token = window.localStorage.getItem("accessToken") ?? window.localStorage.getItem("access_token")
+  const isAuthEndpoint =
+    config.url?.includes("/api/login") ||
+    config.url?.includes("/api/register") ||
+    config.url?.includes("/api/auth/refresh") ||
+    config.url?.includes("/api/auth/google") ||
+    config.url?.includes("/api/auth/exchange")
+
+  let token =
+    window.localStorage.getItem("accessToken") ??
+    window.localStorage.getItem("access_token") ??
+    getCookie("accessToken") ??
+    getCookie("access_token")
+
+  const refreshToken =
+    window.localStorage.getItem("refreshToken") ??
+    window.localStorage.getItem("refresh_token") ??
+    getCookie("refreshToken") ??
+    getCookie("refresh_token")
+
+  // Proactively refresh expired access token before sending non-auth requests
+  if (!isAuthEndpoint && refreshToken && isTokenExpiringSoon(token, 10)) {
+    try {
+      token = await getRefreshedToken()
+    } catch {
+      // If refresh fails here, let request proceed so 401 interceptor can handle it
+    }
+  }
 
   if (token) {
-    config.headers = config.headers ?? {}
-    config.headers.Authorization = `Bearer ${token}`
+    if (config.headers && typeof (config.headers as any).set === "function") {
+      (config.headers as any).set("Authorization", `Bearer ${token}`)
+    } else {
+      config.headers = config.headers ?? {}
+      config.headers.Authorization = `Bearer ${token}`
+    }
   }
 
   return config
@@ -118,38 +178,20 @@ axiosClient.interceptors.response.use(
 
     originalRequest._retry = true
 
-    if (isRefreshing) {
-      await new Promise<void>((resolve) => {
-        refreshQueue.push(resolve)
-      })
-
-      const retryToken = window.localStorage.getItem("accessToken") ?? window.localStorage.getItem("access_token")
-
-      if (retryToken) {
-        originalRequest.headers = originalRequest.headers ?? {}
-        originalRequest.headers.Authorization = `Bearer ${retryToken}`
-      }
-
-      return axiosClient(originalRequest)
-    }
-
-    isRefreshing = true
-
     try {
-      const refreshedToken = await refreshAccessToken()
+      const refreshedToken = await getRefreshedToken()
 
-      refreshQueue.forEach((resolve) => resolve())
-      refreshQueue = []
-
-      originalRequest.headers = originalRequest.headers ?? {}
-      originalRequest.headers.Authorization = `Bearer ${refreshedToken}`
+      if (originalRequest.headers && typeof originalRequest.headers.set === "function") {
+        originalRequest.headers.set("Authorization", `Bearer ${refreshedToken}`)
+      } else {
+        originalRequest.headers = originalRequest.headers ?? {}
+        originalRequest.headers.Authorization = `Bearer ${refreshedToken}`
+      }
 
       return axiosClient(originalRequest)
     } catch (refreshError) {
       clearAuthTokens()
       return Promise.reject(refreshError)
-    } finally {
-      isRefreshing = false
     }
   },
 )

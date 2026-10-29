@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useProfile } from "@/hooks/use-profile"
+import { toast } from "@/components/ui/toast"
 
 export type WorkspaceOption = {
     id: string | number
@@ -69,6 +70,14 @@ export function useWorkspaceSwitcher() {
 
     const switchWorkspace = useCallback(
         (workspace: WorkspaceOption, tab: string = "General") => {
+            const currentId =
+                activeWorkspace?.id ??
+                (typeof window !== "undefined"
+                    ? window.localStorage.getItem(ACTIVE_WORKSPACE_KEY)
+                    : null)
+            const isDifferentWorkspace =
+                !currentId || String(currentId) !== String(workspace.id)
+
             try {
                 window.localStorage.setItem(ACTIVE_WORKSPACE_KEY, String(workspace.id))
                 // Keep legacy key in sync so other parts of the app that read
@@ -81,8 +90,12 @@ export function useWorkspaceSwitcher() {
             setActiveWorkspace(workspace)
             // Navigate to the workspace with target workspaceId and tab
             router.push(`/workspace?workspaceId=${workspace.id}&tab=${tab}`)
+
+            if (isDifferentWorkspace) {
+                toast.info(`you have switched to "${workspace.name}" workspace`)
+            }
         },
-        [router]
+        [activeWorkspace, router]
     )
 
     const handleWorkspaceCreated = useCallback(

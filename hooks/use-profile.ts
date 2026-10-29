@@ -73,9 +73,9 @@ export function useProfile(options?: UseProfileOptions) {
   const [error, setError] = useState("")
 
   const loadProfile = useCallback(async () => {
-    const { accessToken } = loadTokens()
+    const { accessToken, refreshToken } = loadTokens()
 
-    if (!accessToken) {
+    if (!accessToken && !refreshToken) {
       setError("Please log in to view your profile.")
       setIsLoading(false)
       return

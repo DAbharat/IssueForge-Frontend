@@ -37,6 +37,7 @@ import {
 import { searchUsers } from "@/services/account.service"
 import { useProfile } from "@/hooks/use-profile"
 import { useLabels } from "@/hooks/use-labels"
+import { useProjectActivities } from "@/hooks/use-project-activities"
 import { listIssueLabels } from "@/services/labels.service"
 import { useRouter } from "next/navigation"
 import { toast } from "@/components/ui/toast"
@@ -70,6 +71,12 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
     createProjectLabel,
     deleteProjectLabel,
   } = useLabels(projectID)
+  const {
+    activities: projectActivities,
+    isLoading: isLoadingActivities,
+    error: activitiesError,
+    reload: reloadActivities,
+  } = useProjectActivities(activeTab === "Activity" ? projectID : null)
   const router = useRouter()
 
   // Resolve params from Promise
@@ -534,7 +541,13 @@ export default function ProjectPage({ params: paramsPromise }: PageProps) {
         )}
 
         {activeTab === "Activity" && (
-          <ProjectActivity onViewIssues={() => setActiveTab("Issues")} />
+          <ProjectActivity
+            activities={projectActivities}
+            isLoading={isLoadingActivities}
+            error={activitiesError}
+            onRetry={reloadActivities}
+            onViewIssues={() => setActiveTab("Issues")}
+          />
         )}
 
         {activeTab === "Settings" && (

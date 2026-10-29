@@ -524,6 +524,38 @@ Response (200 OK):
 ]
 ```
 
+### 19b) GET /api/projects/{projectID}/activities
+Auth required: Yes (Project members only)
+
+Path params:
+- `projectID` (number)
+
+Query params:
+- `limit` (number, optional, default: 20, max: 100)
+- `offset` (number, optional, default: 0)
+
+Response (200 OK):
+
+```json
+[
+  {
+    "id": 1,
+    "project_id": 20,
+    "actor_id": 1,
+    "actor_name": "Bharat Don",
+    "actor_username": "bharat",
+    "target_user_id": 2,
+    "target_user_name": "Jane Doe",
+    "target_user_username": "janedoe",
+    "activity_type": "PROJECT_MEMBER_ADDED",
+    "field_name": null,
+    "old_value": null,
+    "new_value": null,
+    "created_at": "2026-10-20T20:43:48.07822+05:30"
+  }
+]
+```
+
 ---
 
 ## Issue endpoints

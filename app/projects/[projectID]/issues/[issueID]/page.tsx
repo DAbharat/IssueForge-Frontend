@@ -661,7 +661,7 @@ export default function IssuePage({
                                     <div className="mx-4 w-px shrink-0 self-stretch bg-[#27272A]" />
 
                                     {/* Labels */}
-                                    <div className="flex flex-1 items-center gap-2.5">
+                                    <div className="flex flex-1 items-center gap-2.5 min-w-0">
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
                                             viewBox="0 0 24 24"
@@ -673,9 +673,28 @@ export default function IssuePage({
                                             <path d="M20.59 13.41 12 22l-9-9V4h9l8.59 9.41z" />
                                             <circle cx="7" cy="7" r="1.5" />
                                         </svg>
-                                        <div className="flex flex-col justify-center gap-0.5">
+                                        <div className="flex flex-col justify-center gap-0.5 min-w-0">
                                             <span className="text-[10px] leading-none text-[#52525B]">Labels</span>
-                                            <span className="text-xs leading-none text-[#A1A1AA]">—</span>
+                                            {issueLabels.length > 0 ? (
+                                                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                                    {issueLabels.map((label) => (
+                                                        <span
+                                                            key={label.id}
+                                                            className="inline-flex items-center gap-1 rounded border border-[#27272A] bg-[#18181B] px-1.5 py-0.5 text-[11px] font-medium text-[#D4D4D8]"
+                                                        >
+                                                            {label.color && (
+                                                                <span
+                                                                    className="h-1.5 w-1.5 rounded-full shrink-0"
+                                                                    style={{ backgroundColor: label.color }}
+                                                                />
+                                                            )}
+                                                            <span className="truncate max-w-[120px]">{label.name}</span>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs leading-none text-[#A1A1AA]">—</span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -780,7 +799,11 @@ export default function IssuePage({
 
                         {/* Tabs */}
                         <div className="pt-10">
-                            <IssueTabs activeTab={activeTab} onTabChange={setActiveTab} />
+                            <IssueTabs
+                                activeTab={activeTab}
+                                onTabChange={setActiveTab}
+                                labels={issueLabels}
+                            />
                         </div>
 
                         {/* Tab Content */}

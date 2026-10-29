@@ -48,7 +48,9 @@ export async function proxy(req: NextRequest) {
     const isPublic = isPublicRoute(pathname);
 
     let userId: string | null = null;
+    let nextAccessToken: string | null = null;
     const accessToken = req.cookies.get("accessToken")?.value || req.cookies.get("access_token")?.value;
+    const refreshToken = req.cookies.get("refreshToken")?.value || req.cookies.get("refresh_token")?.value;
 
     if (accessToken) {
         try {
@@ -58,6 +60,34 @@ export async function proxy(req: NextRequest) {
             }
         } catch {
             userId = null;
+        }
+    }
+
+    // If access token is expired/missing, but a refresh token exists, attempt silent token refresh
+    if (!userId && refreshToken && !isAuthPage) {
+        try {
+            const backendUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/+$/, "");
+            const refreshRes = await fetch(`${backendUrl}/api/auth/refresh`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ refresh_token: refreshToken }),
+            });
+
+            if (refreshRes.ok) {
+                const data = await refreshRes.json();
+                const token = data.accessToken || data.access_token;
+                if (token) {
+                    const payload = verifyToken(token);
+                    if (payload?.userId) {
+                        userId = String(payload.userId);
+                        nextAccessToken = token;
+                    }
+                }
+            }
+        } catch (err) {
+            console.error("proxy silent refresh failed:", err);
         }
     }
 
@@ -74,7 +104,7 @@ export async function proxy(req: NextRequest) {
     }
 
     // 2. Protected routes:
-    // Strictly require a valid, verified access token.
+    // Strictly require a valid, verified access token (or successfully refreshed token).
     // If unauthenticated, redirect immediately to /login and delete all auth cookies.
     if (!userId && !isPublic) {
         const redirectRes = NextResponse.redirect(new URL("/login", req.url));
@@ -89,6 +119,18 @@ export async function proxy(req: NextRequest) {
     const response = NextResponse.next();
     if (userId) {
         response.headers.set("x-user-id", userId);
+    }
+    if (nextAccessToken) {
+        response.cookies.set("accessToken", nextAccessToken, {
+            path: "/",
+            maxAge: 7 * 24 * 60 * 60,
+            sameSite: "lax",
+        });
+        response.cookies.set("access_token", nextAccessToken, {
+            path: "/",
+            maxAge: 7 * 24 * 60 * 60,
+            sameSite: "lax",
+        });
     }
     return response;
 }
