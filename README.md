@@ -10,6 +10,21 @@ The IssueForge frontend provides a dark-mode-first interface prioritizing inform
 
 ---
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Technology Stack](#technology-stack)
+- [Key Features & Application Views](#key-features--application-views)
+- [Frontend Architecture](#frontend-architecture)
+- [Design System](#design-system)
+- [Route Guarding & Security Middleware](#route-guarding--security-middleware)
+- [Directory Structure](#directory-structure)
+- [Getting Started](#getting-started)
+- [Build & Quality Commands](#build--quality-commands)
+- [License](#license)
+
+---
+
 ## Technology Stack
 
 - **Framework**: [Next.js 16.2.12](https://nextjs.org/) (App Router, Server & Client Components)
@@ -36,22 +51,24 @@ The IssueForge frontend provides a dark-mode-first interface prioritizing inform
 
 ### 2. Authentication Suite (`/(auth)`)
 - **Login (`/login`) & Register (`/register`)**: Unified dark split-panel layouts featuring custom brand artwork (`Issueforgeimg.png`), form validation, password visibility toggles, and Google OAuth action buttons.
+- **Google OIDC Handoff (`/auth/callback`)**: Seamless OAuth authentication exchange with single-execution guard in React Strict Mode (`useRef` protected) calling backend `/api/auth/exchange` and synchronizing session tokens.
 - **Cookie & LocalStorage Synchronization**: Tokens are simultaneously synchronized across `localStorage` and `document.cookie` (`SameSite=Lax`) to enable instant server-side route evaluation in Next.js middleware.
 
 ### 3. Application Shell & Navigation
 - **Isolated Public Layout**: Landing and authentication pages render completely standalone without dashboard navigation shells.
 - **Authenticated Dashboard Shell (`AppShell`)**:
   - Collapsible left sidebar (`AppSidebar`) with tree navigation for workspaces, projects, invites, and archive.
-  - Top header (`Navbar`) with active workspace switcher, real-time user search dialog, member invitation trigger, and user profile card.
+  - Top header (`Navbar`) with active workspace switcher, real-time user search dialog, member invitation trigger, in-app notification center (`NotificationPopover`), and user profile card.
   - Full mobile responsiveness with sliding drawer navigation.
 
 ### 4. Workspace Management (`/workspace`)
 - Multi-workspace switching and creation.
+- Tabbed interface: Projects, Team Members, Invitations, Details, and Workspace Analytics.
 - General workspace configuration and name renaming modals.
 - Team member invitations with role assignment (`Owner`, `Admin`, `Member`).
 - Pending workspace invitations list with instant revocation controls.
 
-### 5. Project Hub & Kanban Tracking (`/projects/[projectId]`)
+### 5. Project Hub & Kanban Tracking (`/projects/[projectID]`)
 - **Project Overview**: High-level milestone metrics (`Total issues`, `To do`, `In progress`, `Completed`) and recently updated tasks.
 - **High-Density Kanban Board**: Three-column workflow (`Todo`, `In Progress`, `Done`) with priority color badges (`Low`, `Medium`, `High`, `Urgent`), project labels, search filtering, and sorting.
 - **Issue Modal & Detail View**: Rich issue management including title, markdown description, assignee assignment, priority updates, status transitions, and target due dates.
@@ -65,8 +82,22 @@ The IssueForge frontend provides a dark-mode-first interface prioritizing inform
 - Interactive avatar upload with integrated client-side cropping modal.
 
 ### 7. Archive & Recovery Hub (`/archive`)
-- Dedicated interface for viewing soft-deleted workspaces and projects.
+- Dedicated interface for viewing soft-deleted workspaces, projects, issues, and attachments.
 - One-click restoration workflow that non-destructively recovers archived items.
+
+### 8. In-App Notification Center (`NotificationPopover`)
+- **Real-Time Unread Indicator**: Interactive bell icon in `Navbar` displaying a live unread count badge (`#DDE1E5` light platinum fill, high-contrast black text).
+- **Dual Status Filtering**: Instant toggling between `All` notifications (displaying total count) and `Unread` notifications (displaying unread count).
+- **Deep-Link Navigation**: Clicking any notification automatically marks it as read and navigates directly to the exact destination (`/workspace?tab=members`, `/workspace?tab=invitations`, `/projects/[projectID]`, `/projects/[projectID]?issueId=[id]`, or `/archive`).
+- **Comprehensive Notification Matrix**: Contextual Lucide icons and tailored messaging across 30 distinct event types (workspace invites, role changes, project assignments, issue transitions, comment mentions, and restorations).
+- **Bulk & Individual Controls**: One-click "Mark all as read" and "Clear all read" bulk operations alongside individual mark-as-read and deletion actions.
+- **Optimistic State Updates & Background Polling**: Instant local UI state reflections when marking items as read or purging notifications, supported by periodic 30s background unread count synchronization.
+
+### 9. Workspace & Project Analytics
+- **Velocity Metrics**: Total completed issues, completion ratios, and active workload tracking.
+- **Distribution Charts**: Issues categorized by status (`Todo`, `In Progress`, `Done`) and priority (`Low`, `Medium`, `High`, `Urgent`).
+- **Activity Breakdown**: Audit trail action counts and member contributions.
+- **Team Leaderboard**: Top contributors by completed tasks and recorded actions.
 
 ---
 
@@ -158,34 +189,59 @@ issueforge-frontend/
 │   │   ├── login/page.tsx            # Login screen
 │   │   └── register/page.tsx         # Registration screen
 │   ├── archive/page.tsx              # Soft-deleted items recovery view
+│   ├── auth/                         # OAuth & handoff exchange routes
+│   │   └── callback/page.tsx         # Google OIDC callback & exchange handler
 │   ├── profile/page.tsx              # User profile & avatar crop view
-│   ├── projects/page.tsx             # Project details, kanban & overview
+│   ├── projects/                     # Dynamic project routes
+│   │   └── [projectID]/page.tsx      # Project overview, kanban & issue details
 │   ├── workspace/page.tsx            # Workspace details, settings & invites
 │   ├── layout.tsx                    # Root layout with fonts & AppShell
 │   ├── page.tsx                      # Root marketing landing page
 │   └── globals.css                   # Tailwind v4 theme & CSS tokens
 ├── components/                       # Shared application components
+│   ├── analytics/                    # Velocity metrics, charts & team leaderboard
+│   ├── archive/                      # Soft-deleted entity cards & restoration dialogs
 │   ├── auth/                         # Login and registration form views
-│   ├── layout/                       # AppShell, Navbar, WorkspaceSwitcher
-│   ├── issues/                       # Issue details, creation, and status components
-│   ├── projects/                     # Kanban board, overview cards, project tabs
-│   ├── workspace/                    # Workspace details & invitation modals
-│   ├── profile/                      # Profile cards and stats
+│   ├── comments/                     # Threaded issue discussions & activity timeline
 │   ├── common/                       # ImageUploadWithCrop and shared utilities
-│   └── ui/                           # Pure shadcn/ui primitives
+│   ├── issues/                       # Issue details, creation modals, and status badges
+│   ├── layout/                       # AppShell, Navbar, AppSidebar, WorkspaceSwitcher
+│   ├── notifications/                # NotificationPopover, NotificationCard, NotificationList
+│   ├── profile/                      # Profile cards and account stats
+│   ├── projects/                     # Kanban board, overview cards, project tabs
+│   ├── ui/                           # Pure shadcn/ui primitives (@base-ui/react / Radix)
+│   ├── workspace/                    # Workspace details & invitation modals
+│   └── workspace-members/            # Member lists, role assignment & invite revocation
 ├── features/                         # Feature-based domain modules
 │   └── landing/                      # Landing page module
 │       ├── types.ts                  # Landing page data contracts
 │       ├── constants.ts              # Static copy, preview data, bento items
 │       └── components/               # Header, Hero, Preview, Bento, Workflow, CTA, Footer
-├── hooks/                            # Custom React hooks (useAuth, useWorkspaceSwitcher, etc.)
-├── services/                         # API client services (workspaces, projects, issues, etc.)
+├── hooks/                            # Custom React hooks
+│   ├── use-analytics.ts              # Workspace & project metric queries
+│   ├── use-archive.ts                # Archive retrieval & restoration mutations
+│   ├── use-auth.ts                   # Session state, login, registration & logout
+│   ├── use-comments.ts               # Issue comment threads & actions
+│   ├── use-notifications.ts          # Unread counts, notifications list & polling
+│   ├── use-workspace-invitations.ts  # Workspace invites & revocation
+│   └── use-workspace-switcher.ts     # Active workspace context & switching
+├── services/                         # API client services (axiosClient)
+│   ├── account.service.ts            # Auth & user profile endpoints
+│   ├── analytics.service.ts          # Metrics, distribution & velocity
+│   ├── archive.service.ts            # Soft-delete & restoration operations
+│   ├── comments.service.ts           # Issue comment mutations
+│   ├── issues.service.ts             # Issue CRUD, transitions & reassignments
+│   ├── notifications.service.ts      # Notifications listing, unread counts & bulk actions
+│   ├── projects.service.ts           # Project CRUD & settings
+│   └── workspaces.service.ts         # Workspace CRUD & members
 ├── lib/                              # Infrastructure utilities
 │   ├── auth.ts                       # JWT payload decoding & expiration validation
 │   ├── axiosClient.ts                # Configured Axios instance with refresh interceptor
 │   └── utils.ts                      # Tailwind clsx/cn helper
 ├── types/                            # Global TypeScript declarations
-├── public/                           # Static image assets and icons
+│   ├── ApiResponse.ts                # Standard API response envelope
+│   └── notification.ts               # Notification types, enums & payloads
+├── public/                           # Static image assets and brand artwork
 ├── docs/                             # Frontend documentation
 │   ├── api-contract.md               # API interface specifications
 │   ├── architecture.md               # Code organization and component rules
