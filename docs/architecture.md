@@ -104,7 +104,8 @@ services/
 ├── attachments.service.ts              # Issue & comment attachment calls
 ├── invitations.service.ts              # Workspace invitation calls
 ├── archive.service.ts                  # Archive & soft-delete restore calls
-└── analytics.service.ts                # Workspace & Project activity analytics, charts, velocity
+├── analytics.service.ts                # Workspace & Project activity analytics, charts, velocity
+└── notifications.service.ts            # Notifications, unread counts, mark-as-read, delete
 ```
 
 Do not make API requests directly from components.

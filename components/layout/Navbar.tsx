@@ -16,6 +16,7 @@ import {
     cancelInvitation,
     listPendingWorkspaceInvitationsForWorkspace,
 } from "@/services/invitations.service"
+import { NotificationPopover } from "@/components/notifications/NotificationPopover"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -386,14 +387,7 @@ export default function Navbar({
 
                     {/* Right: notifications + profile */}
                     <div className="flex items-center justify-end gap-1.5 md:gap-3">
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            aria-label="Notifications"
-                            className="h-9 w-9 shrink-0 cursor-pointer rounded-sm bg-transparent p-0 text-[#94A3B8] hover:bg-[#18181B] hover:text-[#E2E8F0] md:h-10 md:w-10"
-                        >
-                            <Bell className="h-4 w-4 md:h-5 md:w-5" />
-                        </Button>
+                        <NotificationPopover />
 
                         {/* Profile Dropdown Menu */}
                         <div

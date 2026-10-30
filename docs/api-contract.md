@@ -1354,6 +1354,158 @@ Response (200 OK):
 
 ---
 
+## Notifications
+
+### 1) GET /api/notifications
+Auth required: Yes
+
+Query parameters:
+- `limit` (optional, integer, default: 20, max: 100)
+- `offset` (optional, integer, default: 0)
+- `filter` (optional, string: `"unread"` to fetch only unread notifications)
+
+Response (200 OK):
+```json
+[
+  {
+    "id": 101,
+    "recepient_id": 5,
+    "sender_id": 2,
+    "notification_type": "ISSUE_ASSIGNED_TO_YOU",
+    "title": "Issue Assigned to You",
+    "message": "You have been assigned to issue 'Fix login bug'",
+    "project_id": 12,
+    "issue_id": 45,
+    "workspace_id": 3,
+    "is_read": false,
+    "read_at": null,
+    "created_at": "2026-10-30T12:00:00Z",
+    "updated_at": "2026-10-30T12:00:00Z"
+  }
+]
+```
+
+### 2) GET /api/notifications/unread
+Auth required: Yes
+
+Response (200 OK):
+```json
+[
+  {
+    "id": 101,
+    "recepient_id": 5,
+    "sender_id": 2,
+    "notification_type": "ISSUE_ASSIGNED_TO_YOU",
+    "title": "Issue Assigned to You",
+    "message": "You have been assigned to issue 'Fix login bug'",
+    "project_id": 12,
+    "issue_id": 45,
+    "workspace_id": 3,
+    "is_read": false,
+    "read_at": null,
+    "created_at": "2026-10-30T12:00:00Z",
+    "updated_at": "2026-10-30T12:00:00Z"
+  }
+]
+```
+
+### 3) GET /api/notifications/unread/count
+Auth required: Yes
+
+Response (200 OK):
+```json
+{
+  "unread_count": 3
+}
+```
+
+### 4) GET /api/notifications/{id}
+Auth required: Yes
+
+Path parameters:
+- `id`: notification ID (int64)
+
+Response (200 OK):
+```json
+{
+  "id": 101,
+  "recepient_id": 5,
+  "sender_id": 2,
+  "notification_type": "ISSUE_ASSIGNED_TO_YOU",
+  "title": "Issue Assigned to You",
+  "message": "You have been assigned to issue 'Fix login bug'",
+  "project_id": 12,
+  "issue_id": 45,
+  "workspace_id": 3,
+  "is_read": false,
+  "read_at": null,
+  "created_at": "2026-10-30T12:00:00Z",
+  "updated_at": "2026-10-30T12:00:00Z"
+}
+```
+
+### 5) PATCH /api/notifications/{id}/read
+Auth required: Yes
+
+Path parameters:
+- `id`: notification ID (int64)
+
+Response (200 OK):
+```json
+{
+  "id": 101,
+  "recepient_id": 5,
+  "sender_id": 2,
+  "notification_type": "ISSUE_ASSIGNED_TO_YOU",
+  "title": "Issue Assigned to You",
+  "message": "You have been assigned to issue 'Fix login bug'",
+  "project_id": 12,
+  "issue_id": 45,
+  "workspace_id": 3,
+  "is_read": true,
+  "read_at": "2026-10-30T12:05:00Z",
+  "created_at": "2026-10-30T12:00:00Z",
+  "updated_at": "2026-10-30T12:05:00Z"
+}
+```
+
+### 6) POST /api/notifications/read-all
+Auth required: Yes
+
+Response (200 OK):
+```json
+{
+  "message": "all notifications marked as read"
+}
+```
+
+### 7) DELETE /api/notifications/{id}
+Auth required: Yes
+
+Path parameters:
+- `id`: notification ID (int64)
+
+Response (200 OK):
+```json
+{
+  "id": 101
+}
+```
+
+### 8) DELETE /api/notifications
+Auth required: Yes
+
+Marks all read/unread notifications as read in PostgreSQL and enqueues a background deletion job.
+
+Response (200 OK):
+```json
+{
+  "message": "all notifications queued for deletion"
+}
+```
+
+---
+
 ## Notes
 
 
